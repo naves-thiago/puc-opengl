@@ -1,4 +1,4 @@
-CFLAGS=-g -Wall -std=c99 -I include
+CFLAGS=-g -Wall -std=c99 -I ../include
 LDFLAGS=-lglfw -lGL -lX11 -lpthread -lXi -ldl
 
 all: helloworld

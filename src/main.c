@@ -67,7 +67,7 @@ bool check_program_link(unsigned int program, char *name)
 	return success;
 }
 
-bool compile_and_send_vertex_shader()
+unsigned int compile_and_send_vertex_shader()
 {
 	static const char * const shader =
 		"#version 330 core\n"
@@ -84,7 +84,7 @@ bool compile_and_send_vertex_shader()
 	return vertex_shader;
 }
 
-bool compile_and_send_fragment_shader()
+unsigned int compile_and_send_fragment_shader()
 {
 	static const char * const shader =
 		"#version 330 core\n"

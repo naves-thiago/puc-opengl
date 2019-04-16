@@ -16,22 +16,34 @@ void process_input(GLFWwindow *window)
 }
 
 float vertices[] = {
-	-0.5f, -0.5f, 0.0f, // left
-	 0.5f, -0.5f, 0.0f, // right
-	 0.0f,  0.5f, 0.0f, // top
+	 0.5,  0.5, 0,  // top right
+	 0.5, -0.5, 0,  // bottom right
+	-0.5, -0.5, 0,  // bottom left
+	-0.5,  0.5, 0,  // top left
 };
 
-unsigned int VBO, VAO;
+unsigned int indices[] = {
+	0, 1, 3,
+	1, 2, 3,
+};
+
+unsigned int VBO, EBO, VAO;
 void send_vertices()
 {
-	glGenBuffers(1, &VBO); // Create buffer ID
-
 	// Create VAO (Vertex Array Object)
 	glGenVertexArrays(1, &VAO);
 	glBindVertexArray(VAO);
+
+	// Create vertex buffer
+	glGenBuffers(1, &VBO); // Create buffer ID
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	// Copy the data. GL_STATIC_DRAW -> Data likely wont change
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	// Create index buffer
+	glGenBuffers(1, &EBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
 	// Uses the last buffer associated with GL_ARRAY_BUFFER
 	// Params: attribute location, attribute size, type, normalize, stride, start position (in the buffer)
@@ -141,6 +153,9 @@ int main()
 	glDeleteShader(vertex_shader);
 	glDeleteShader(frag_shader);
 
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // Wireframe mode
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); // Filled mode (default)
+	
 	while (!glfwWindowShouldClose(window))
 	{
 		process_input(window);
@@ -149,11 +164,13 @@ int main()
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		// Draw triangle
+		// Draw triangles
 		glUseProgram(shader_program);
 		glBindVertexArray(VAO); // No need to bind every time, since we only got 1, but
+		// Params: mode, vertex count, type of index vector, offset in the index vector
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		// Params: mode, start index, vertex count
-		glDrawArrays(GL_TRIANGLES, 0, 3);
+		//glDrawArrays(GL_TRIANGLES, 0, 3);
 		//glBindVertexArray(0); // No need to unbind every time
 
 		glfwSwapBuffers(window);
@@ -163,6 +180,7 @@ int main()
 	// de-allocate resources
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteBuffers(1, &VBO);
+	glDeleteBuffers(1, &EBO);
 
 	glfwTerminate();
 	return 0;

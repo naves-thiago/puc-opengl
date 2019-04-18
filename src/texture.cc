@@ -1,9 +1,10 @@
-#include "texture.hh"
-#include "stb_image.h"
+#include <texture.hh>
+#include <stb_image.h>
 #include <iostream>
 
-Texture2D::Texture2D(const std::string &path, unsigned int wrapS,
-			unsigned int wrapT) {
+Texture2D::Texture2D(const std::string &path, unsigned int location,
+			bool verticalFlip, unsigned int wrapS,
+			unsigned int wrapT) : location(GL_TEXTURE0 + location) {
 	glGenTextures(1, &ID);
 	glBindTexture(GL_TEXTURE_2D, ID);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapS);
@@ -12,6 +13,7 @@ Texture2D::Texture2D(const std::string &path, unsigned int wrapS,
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	int width, height, nrChannels;
+	stbi_set_flip_vertically_on_load(verticalFlip);
 	unsigned char *data = stbi_load(path.c_str(), &width, &height, &nrChannels, 0);
 	if (data) {
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB,
@@ -25,5 +27,10 @@ Texture2D::Texture2D(const std::string &path, unsigned int wrapS,
 }
 
 void Texture2D::bind(void) const {
+	glBindTexture(GL_TEXTURE_2D, ID);
+}
+
+void Texture2D::activateAndBind(void) const {
+	glActiveTexture(location);
 	glBindTexture(GL_TEXTURE_2D, ID);
 }

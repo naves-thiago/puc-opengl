@@ -1,4 +1,4 @@
-CFLAGS=-g -Wall -std=c99 -I ../include
+CFLAGS=-g -Wall -std=c99 -I ../inc
 LDFLAGS=-lglfw -lGL -lX11 -lpthread -lXi -ldl
 
 PROG=interpolate

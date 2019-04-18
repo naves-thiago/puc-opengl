@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-g -Wall -I ../include -I inc
+CFLAGS=-g -Wall -I ../inc
 LDFLAGS=-lglfw -lGL -lX11 -lpthread -lXi -ldl
 
 PROG=shader
@@ -11,7 +11,10 @@ $(PROG): obj/glad.o obj/shader.o obj/main.o
 obj/%.o:src/%.cc
 	$(CC) $(CFLAGS) -c $^ -o $@
 
-obj/glad.o:src/glad.c
-	gcc -g -Wall -I ../include -I inc -c $^ -o $@
+obj/glad.o:../src/glad.c
+	gcc -g -Wall -I ../inc -c $^ -o $@
+
+obj/shader.o:../src/shader.cc
+	$(CC) $(CFLAGS) -c $^ -o $@
 
 %.o: Makefile

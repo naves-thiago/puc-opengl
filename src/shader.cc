@@ -1,4 +1,6 @@
 #include "shader.hh"
+//#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 // public
 // constructor generates the shader on the fly
@@ -68,15 +70,31 @@ void Shader::use() {
 }
 
 void Shader::setBool(const std::string &name, bool value) const {
-	glUniform1i(glGetUniformLocation(ID, name.c_str()), (int)value);
+	glUniform1i(getLocation(name), (int)value);
 }
 
 void Shader::setInt(const std::string &name, int value) const {
-	glUniform1i(glGetUniformLocation(ID, name.c_str()), value);
+	glUniform1i(getLocation(name), value);
 }
 
 void Shader::setFloat(const std::string &name, float value) const {
-	glUniform1f(glGetUniformLocation(ID, name.c_str()), value);
+	glUniform1f(getLocation(name), value);
+}
+
+void Shader::setMat(const std::string &name, const glm::mat2 &value) const {
+	glUniformMatrix2fv(getLocation(name), 1, GL_FALSE, glm::value_ptr(value));
+}
+
+void Shader::setMat(const std::string &name, const glm::mat3 &value) const {
+	glUniformMatrix3fv(getLocation(name), 1, GL_FALSE, glm::value_ptr(value));
+}
+
+void Shader::setMat(const std::string &name, const glm::mat4 &value) const {
+	glUniformMatrix4fv(getLocation(name), 1, GL_FALSE, glm::value_ptr(value));
+}
+
+unsigned int Shader::getLocation(const std::string &name) const {
+	return glGetUniformLocation(ID, name.c_str());
 }
 
 // private

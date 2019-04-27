@@ -243,16 +243,12 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 		lastY = ypos;
 	}
 
-	//std::cout << xpos << "  " << ypos << std::endl;
 	float xoffset = xpos - lastX;
 	float yoffset = lastY - ypos; // reversed since y-coordinates range from bottom to top
 	lastX = xpos;
 	lastY = ypos;
 
-	//std::cout << xoffset << "  " << yoffset << " | " << xpos << "  " << ypos << std::endl;
-
-	float sensitivity = 0.0008f;
-	//float sensitivity = 0.5f;
+	float sensitivity = 0.05f;
 	xoffset *= sensitivity;
 	yoffset *= sensitivity;
 
@@ -272,7 +268,6 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 //	front.x = cos(glm::radians(yaw));
 //	front.y = sin(glm::radians(pitch));
 //	front.z = sin(glm::radians(yaw));
-
 
 	cameraFront = glm::normalize(front);
 }

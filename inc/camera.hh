@@ -23,7 +23,6 @@ class GenericCamera {
 	float look_sensitivity;
 	float zoom_sensitivity;
 	float aspect_ratio;
-	glm::vec3 position;
 	glm::vec3 front;
 	glm::vec3 up;
 	glm::vec3 right;
@@ -57,6 +56,8 @@ class GenericCamera {
 	}
 
 public:
+	glm::vec3 position;
+
 	GenericCamera(float aspect_ratio) : aspect_ratio(aspect_ratio) {
 		pitch   = 0.0f;
 		yaw     = -90.0f;
@@ -141,14 +142,6 @@ public:
 
 	void set_zoom_sensitivity(float value) {
 		zoom_sensitivity = value;
-	}
-
-	void set_pos(glm::vec3 value) {
-		position = value;
-	}
-
-	void set_pos(float x, float y, float z) {
-		set_pos(glm::vec3(x, y, z));
 	}
 
 	void set_pos(glm::vec3 pos, float pitch, float yaw, float fov) {

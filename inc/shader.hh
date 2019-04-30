@@ -27,6 +27,9 @@ public:
 	void setMat(const std::string &name, const glm::mat2 &value) const;
 	void setMat(const std::string &name, const glm::mat3 &value) const;
 	void setMat(const std::string &name, const glm::mat4 &value) const;
+	void setVec(const std::string &name, const glm::vec2 &value) const;
+	void setVec(const std::string &name, const glm::vec3 &value) const;
+	void setVec(const std::string &name, const glm::vec4 &value) const;
 	unsigned int getLocation(const std::string &name) const;
 
 private:

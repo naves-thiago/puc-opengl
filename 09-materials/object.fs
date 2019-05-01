@@ -17,7 +17,6 @@ struct Light {
 uniform Material material;
 uniform Light light;
 uniform vec3 viewPos;
-uniform vec3 aambient;
 
 in vec3 FragPos;
 in vec3 Normal;

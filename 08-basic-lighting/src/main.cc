@@ -149,9 +149,9 @@ int main()
 		glm::mat4 light_model(1.0f);
 		light_model = glm::translate(light_model, light_pos);
 		light_model = glm::scale(light_model, glm::vec3(0.2f));
-		obj_shader.setMat("model", light_model);
-		obj_shader.setMat("view", view);
-		obj_shader.setMat("projection", projection);
+		light_shader.setMat("model", light_model);
+		light_shader.setMat("view", view);
+		light_shader.setMat("projection", projection);
 		glBindVertexArray(light_vao);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 

@@ -6,7 +6,7 @@ PROG=shader
 all: $(PROG)
 
 $(PROG): obj/glad.o obj/shader.o obj/main.o
-	$(CC) $(LDFLAGS) $^ -o $@
+	$(CC) $^ -o $@ $(LDFLAGS)
 
 obj/%.o:src/%.cc
 	$(CC) $(CFLAGS) -c $^ -o $@

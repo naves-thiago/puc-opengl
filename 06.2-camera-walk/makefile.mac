@@ -13,7 +13,7 @@ clean:
 	rm -f obj/* $(PROG)
 
 $(PROG): $(_LIB) obj/main.o
-	$(CC) $(LDFLAGS) $^ -o $@
+	$(CC) $^ -o $@ $(LDFLAGS)
 
 obj/%.o:src/%.cc Makefile
 	$(CC) $(CFLAGS) -c $< -o $@

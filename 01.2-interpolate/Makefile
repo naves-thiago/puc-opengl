@@ -5,7 +5,7 @@ PROG=interpolate
 all: $(PROG)
 
 $(PROG): obj/glad.o obj/main.o
-	gcc $(LDFLAGS) $^ -o $@
+	gcc $^ -o $@ $(LDFLAGS)
 
 obj/%.o:src/%.c
 	gcc $(CFLAGS) -c $^ -o $@

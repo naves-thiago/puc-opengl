@@ -1,6 +1,7 @@
 #include "shader.hh"
 //#include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <iostream>
 
 // public
 // constructor generates the shader on the fly
@@ -106,7 +107,10 @@ void Shader::setVec(const std::string &name, const glm::vec4 &value) const {
 }
 
 unsigned int Shader::getLocation(const std::string &name) const {
-	return glGetUniformLocation(ID, name.c_str());
+	int loc = glGetUniformLocation(ID, name.c_str());
+	if (loc == -1)
+		std::cout << "Uniform '" << name << "' not found" << std::endl;
+	return loc;
 }
 
 // private

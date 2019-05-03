@@ -11,6 +11,8 @@ enum Direction {
 	BACKWARD,
 	LEFT,
 	RIGHT,
+	UP,
+	DOWN,
 };
 
 class GenericCamera {
@@ -97,6 +99,8 @@ public:
 		case BACKWARD: position -= front * offset; break;
 		case LEFT: position  -= right * offset; break;
 		case RIGHT: position += right * offset; break;
+		case DOWN: position  -= up * offset; break;
+		case UP: position += up * offset; break;
 		}
 	}
 
@@ -238,6 +242,12 @@ public:
 
 		if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 			move(RIGHT, delta_time);
+
+		if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS)
+			move(UP, delta_time);
+
+		if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS)
+			move(DOWN, delta_time);
 
 		if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
 			set_pos(default_pos, default_pitch, default_yaw, default_fov);

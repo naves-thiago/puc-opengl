@@ -17,6 +17,7 @@ uniform float shininess;
 uniform Light light;
 uniform vec3 viewPos;
 uniform sampler2D normalMap;
+uniform sampler2D diffuseMap;
 
 out vec4 FragColor;
 
@@ -24,8 +25,9 @@ void main() {
 	vec3 normal = texture(normalMap, fs_in.TexCoords).rgb;
 	normal = normalize(normal * 2.0 - 1.0);
 	normal = normalize(fs_in.TBN * normal);
+	//vec3 normal = vec3(0.0, 0.0, 1.0);
 
-	vec3 color = vec3(1.0);
+	vec3 color = texture(diffuseMap, fs_in.TexCoords).rgb;
 
 	vec3 ambient = light.ambient * color;
 

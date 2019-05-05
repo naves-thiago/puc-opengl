@@ -1,6 +1,6 @@
 CC=g++
-CFLAGS=-g -Wall -I ../../inc -I ../../assimp/include
-LDFLAGS=-lglfw -lGL -lX11 -lpthread -lXi -ldl -L ../../assimp/lib -lassimp
+CFLAGS=-g -Wall -I ../../inc
+LDFLAGS=-lglfw -lGL -lX11 -lpthread -lXi -ldl
 
 PROG=normal
 

@@ -1,6 +1,6 @@
 CC=g++
 CFLAGS=-g -Wall -I ../../inc -I ../../assimp/include
-LDFLAGS=-lglfw -lGL -lX11 -lpthread -lXi -ldl -L ../../assimp/lib -lassimp
+LDFLAGS=-lglfw -framework OpenGL -L ../../assimp/lib -lassimp
 
 PROG=normal
 
@@ -15,13 +15,13 @@ clean:
 $(PROG): $(_LIB) obj/main.o
 	$(CC) $^ -o $@ $(LDFLAGS)
 
-obj/%.o:src/%.cc makefile.linux
+obj/%.o:src/%.cc makefile.mac
 	$(CC) $(CFLAGS) -c $< -o $@
 
-obj/%.o:../../src/%.c makefile.linux
+obj/%.o:../../src/%.c makefile.mac
 	gcc -g -Wall -I ../../inc -c $< -o $@
 
-obj/%.o:../../src/%.cc makefile.linux
+obj/%.o:../../src/%.cc makefile.mac
 	$(CC) $(CFLAGS) -c $< -o $@
 
 obj/main.o:src/main.cc ../../inc/camera.hh

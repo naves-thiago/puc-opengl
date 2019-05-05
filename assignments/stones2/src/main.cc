@@ -3,15 +3,10 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
 #include <shader.hh>
 #include <texture.hh>
 #include <camera.hh>
 #include <iostream>
-#include <cstddef>
-#include <vector>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -22,67 +17,6 @@ const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
 Camera camera((float)SCR_WIDTH / SCR_HEIGHT);
-
-struct vec3 {
-	float x, y, z;
-};
-
-struct vec2 {
-	float x, y;
-};
-
-struct Vertex {
-	vec3 position;
-	vec3 normal;
-	vec3 tangent;
-	vec2 texture;
-};
-
-std::vector<Vertex> obj_data;
-std::vector<unsigned int> indices;
-
-void load_obj(const std::string &fname) {
-//	const aiScene *scene = import.ReadFile(fname, aiProcess_Triangulate |
-//			aiProcess_CalcTangentSpace | aiProcess_FlipUVs);
-	Assimp::Importer importer;
-	const aiScene *scene = importer.ReadFile(fname, aiProcess_Triangulate |
-			aiProcess_CalcTangentSpace);
-
-	if(!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
-	{
-		std::cout << "ERROR::ASSIMP::" << importer.GetErrorString() << std::endl;
-		throw "Cannot load";
-	}
-
-	aiMesh *mesh = scene->mMeshes[0];
-
-	//std::cout << "V: " << mesh->mNumVertices;
-	for(unsigned int i = 0; i < mesh->mNumVertices; i++) {
-		Vertex v;
-		v.position.x = mesh->mVertices[i].x;
-		v.position.y = mesh->mVertices[i].y;
-		v.position.z = mesh->mVertices[i].z;
-
-		v.normal.x = mesh->mNormals[i].x;
-		v.normal.y = mesh->mNormals[i].y;
-		v.normal.z = mesh->mNormals[i].z;
-
-		v.tangent.x = mesh->mTangents[i].x;
-		v.tangent.y = mesh->mTangents[i].y;
-		v.tangent.z = mesh->mTangents[i].z;
-
-		v.texture.x = mesh->mTextureCoords[0][i].x;
-		v.texture.y = mesh->mTextureCoords[0][i].y;
-
-		obj_data.push_back(v);
-	}
-
-	for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
-		aiFace face = mesh->mFaces[i];
-		for (unsigned int j = 0; j < face.mNumIndices; j++)
-			indices.push_back(face.mIndices[j]);
-	}
-}
 
 int main()
 {
@@ -162,16 +96,81 @@ int main()
 		-0.5f,  0.5f, -0.5f,
 	};
 
-	load_obj("golfball.obj");
+	// positions
+	glm::vec3 pos1(-1.0,  1.0, 0.0);
+	glm::vec3 pos2(-1.0, -1.0, 0.0);
+	glm::vec3 pos3( 1.0, -1.0, 0.0);
+	glm::vec3 pos4( 1.0,  1.0, 0.0);
+	
+	// texture coordinates
+	glm::vec2 uv1(0.0, 1.0);
+	glm::vec2 uv2(0.0, 0.0);
+	glm::vec2 uv3(1.0, 0.0);
+	glm::vec2 uv4(1.0, 1.0);
+	
+	// normal vector
+	glm::vec3 nm(0.0, 0.0, 1.0);
+
+	// calculate tangent/bitangent vectors of both triangles
+	glm::vec3 tangent1, bitangent1;
+	glm::vec3 tangent2, bitangent2;
+
+	// Triangle 1
+	glm::vec3 edge1 = pos2 - pos1;
+	glm::vec3 edge2 = pos3 - pos1;
+	glm::vec2 deltaUV1 = uv2 - uv1;
+	glm::vec2 deltaUV2 = uv3 - uv1;
+
+	float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+
+	tangent1.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
+	tangent1.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
+	tangent1.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+	tangent1 = glm::normalize(tangent1);
+
+	bitangent1.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
+	bitangent1.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
+	bitangent1.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
+	bitangent1 = glm::normalize(bitangent1);
+
+	// Triangle 2
+	edge1 = pos3 - pos1;
+	edge2 = pos4 - pos1;
+	deltaUV1 = uv2 - uv1;
+	deltaUV2 = uv3 - uv1;
+
+	f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+
+	tangent2.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
+	tangent2.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
+	tangent2.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+	tangent2 = glm::normalize(tangent2);
+
+	bitangent2.x = f * (-deltaUV2.x * edge1.x + deltaUV1.x * edge2.x);
+	bitangent2.y = f * (-deltaUV2.x * edge1.y + deltaUV1.x * edge2.y);
+	bitangent2.z = f * (-deltaUV2.x * edge1.z + deltaUV1.x * edge2.z);
+	bitangent2 = glm::normalize(bitangent2);
+
+#define EXPAND2(t) t.x, t.y
+#define EXPAND3(t) t.x, t.y, t.z
+
+	float obj_vertices[] = {
+		EXPAND3(pos1), EXPAND3(nm), EXPAND2(uv1), EXPAND3(tangent1), EXPAND3(bitangent1),
+		EXPAND3(pos2), EXPAND3(nm), EXPAND2(uv2), EXPAND3(tangent1), EXPAND3(bitangent1),
+		EXPAND3(pos3), EXPAND3(nm), EXPAND2(uv3), EXPAND3(tangent1), EXPAND3(bitangent1),
+
+		EXPAND3(pos1), EXPAND3(nm), EXPAND2(uv1), EXPAND3(tangent2), EXPAND3(bitangent2),
+		EXPAND3(pos3), EXPAND3(nm), EXPAND2(uv3), EXPAND3(tangent2), EXPAND3(bitangent2),
+		EXPAND3(pos4), EXPAND3(nm), EXPAND2(uv4), EXPAND3(tangent2), EXPAND3(bitangent2),
+	};
 
 	glEnable(GL_DEPTH_TEST);
 
-	unsigned int light_vbo, light_vao, obj_vbo, obj_vao, obj_ebo;
+	unsigned int light_vbo, light_vao, obj_vbo, obj_vao;
 	// light
 	glGenVertexArrays(1, &light_vao);
 	glGenBuffers(1, &light_vbo);
-	// bind the Vertex Array Object first, then bind and set vertex buffer(s),
-	// and then configure vertex attributes(s).
+	// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
 	glBindVertexArray(light_vao);
 
 	glBindBuffer(GL_ARRAY_BUFFER, light_vbo);
@@ -186,38 +185,34 @@ int main()
 	glGenBuffers(1, &obj_vbo);
 	glBindVertexArray(obj_vao);
 
-    glGenBuffers(1, &obj_ebo);
 	glBindBuffer(GL_ARRAY_BUFFER, obj_vbo);
-	glBufferData(GL_ARRAY_BUFFER, obj_data.size() * sizeof(Vertex), obj_data.data(), GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, obj_ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int),
-			indices.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(obj_vertices), obj_vertices, GL_STATIC_DRAW);
 
 	// position attribute
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-			(void*)offsetof(Vertex, position));
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 14 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
 	// normal attribute
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-			(void*)offsetof(Vertex, normal));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 14 * sizeof(float), (void*)(3 * sizeof(float)));
 	glEnableVertexAttribArray(1);
 
-	// tangent attribute
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-			(void*)offsetof(Vertex, tangent));
+	// texture attribute
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 14 * sizeof(float), (void*)(6 * sizeof(float)));
 	glEnableVertexAttribArray(2);
 
-	// texture attribute
-	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-			(void*)offsetof(Vertex, texture));
+	// tangent attribute
+	glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 14 * sizeof(float), (void*)(8 * sizeof(float)));
 	glEnableVertexAttribArray(3);
 
+	// binormal attribute
+	glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 14 * sizeof(float), (void*)(11 * sizeof(float)));
+	glEnableVertexAttribArray(4);
 
-	Texture2D normal_map("golfball.png", 0);
+	Texture2D normal_map("stones_norm.jpg", 0);
+	Texture2D diffuse_map("stones.jpg", 1);
 	obj_shader.use();
 	obj_shader.setInt("normalMap", 0);
+	obj_shader.setInt("diffuseMap", 1);
 
 	camera.set_move_seed(2.0f);
 
@@ -249,8 +244,9 @@ int main()
 		obj_shader.setMat("projection", projection);
 		obj_shader.setVec("viewPos", camera.position);
 		normal_map.activateAndBind();
+		diffuse_map.activateAndBind();
 		glBindVertexArray(obj_vao);
-		glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
 
 		light_shader.use();
 		light_shader.setVec("lightColor", light_color);

@@ -23,19 +23,11 @@ const unsigned int SCR_HEIGHT = 600;
 
 Camera camera((float)SCR_WIDTH / SCR_HEIGHT);
 
-struct vec3 {
-	float x, y, z;
-};
-
-struct vec2 {
-	float x, y;
-};
-
 struct Vertex {
-	vec3 position;
-	vec3 normal;
-	vec3 tangent;
-	vec2 texture;
+	glm::vec3 position;
+	glm::vec3 normal;
+	glm::vec3 tangent;
+	glm::vec2 texture;
 };
 
 std::vector<Vertex> obj_data;
@@ -56,7 +48,6 @@ void load_obj(const std::string &fname) {
 
 	aiMesh *mesh = scene->mMeshes[0];
 
-	//std::cout << "V: " << mesh->mNumVertices;
 	for(unsigned int i = 0; i < mesh->mNumVertices; i++) {
 		Vertex v;
 		v.position.x = mesh->mVertices[i].x;
@@ -162,7 +153,7 @@ int main()
 		-0.5f,  0.5f, -0.5f,
 	};
 
-	load_obj("golfball.obj");
+	load_obj("stones.obj");
 
 	glEnable(GL_DEPTH_TEST);
 
@@ -170,8 +161,7 @@ int main()
 	// light
 	glGenVertexArrays(1, &light_vao);
 	glGenBuffers(1, &light_vbo);
-	// bind the Vertex Array Object first, then bind and set vertex buffer(s),
-	// and then configure vertex attributes(s).
+	// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
 	glBindVertexArray(light_vao);
 
 	glBindBuffer(GL_ARRAY_BUFFER, light_vbo);
@@ -215,11 +205,13 @@ int main()
 	glEnableVertexAttribArray(3);
 
 
-	Texture2D normal_map("golfball.png", 0);
+	Texture2D normal_map("stones_norm.jpg", 0);
+	Texture2D diffuse_map("stones.jpg", 1);
 	obj_shader.use();
 	obj_shader.setInt("normalMap", 0);
+	obj_shader.setInt("diffuseMap", 1);
 
-	camera.set_move_seed(2.0f);
+	camera.set_move_seed(1.0f);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -249,6 +241,7 @@ int main()
 		obj_shader.setMat("projection", projection);
 		obj_shader.setVec("viewPos", camera.position);
 		normal_map.activateAndBind();
+		diffuse_map.activateAndBind();
 		glBindVertexArray(obj_vao);
 		glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 

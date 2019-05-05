@@ -10,4 +10,4 @@ endif
 
 clean:
 	rm obj/*
-	rm normal
+	rm normals

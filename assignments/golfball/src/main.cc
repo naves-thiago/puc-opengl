@@ -46,7 +46,7 @@ void load_obj(const std::string &fname) {
 //			aiProcess_CalcTangentSpace | aiProcess_FlipUVs);
 	Assimp::Importer importer;
 	const aiScene *scene = importer.ReadFile(fname, aiProcess_Triangulate |
-			aiProcess_CalcTangentSpace);
+			aiProcess_CalcTangentSpace | aiProcess_JoinIdenticalVertices);
 
 	if(!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 	{
@@ -214,12 +214,13 @@ int main()
 			(void*)offsetof(Vertex, texture));
 	glEnableVertexAttribArray(3);
 
-
 	Texture2D normal_map("golfball.png", 0);
 	obj_shader.use();
 	obj_shader.setInt("normalMap", 0);
 
 	camera.set_move_seed(2.0f);
+	camera.set_pos(0, 0, 5.5, 0, -90, 45);
+	camera.set_default_pos(0, 0, 5.5, 0, -90, 45);
 
 	while (!glfwWindowShouldClose(window))
 	{

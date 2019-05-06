@@ -38,7 +38,7 @@ void load_obj(const std::string &fname) {
 //			aiProcess_CalcTangentSpace | aiProcess_FlipUVs);
 	Assimp::Importer importer;
 	const aiScene *scene = importer.ReadFile(fname, aiProcess_Triangulate |
-			aiProcess_CalcTangentSpace);
+			aiProcess_CalcTangentSpace | aiProcess_JoinIdenticalVertices);
 
 	if(!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 	{
@@ -161,7 +161,8 @@ int main()
 	// light
 	glGenVertexArrays(1, &light_vao);
 	glGenBuffers(1, &light_vbo);
-	// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
+	// bind the Vertex Array Object first, then bind and set vertex buffer(s),
+	// and then configure vertex attributes(s).
 	glBindVertexArray(light_vao);
 
 	glBindBuffer(GL_ARRAY_BUFFER, light_vbo);
@@ -203,7 +204,6 @@ int main()
 	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex),
 			(void*)offsetof(Vertex, texture));
 	glEnableVertexAttribArray(3);
-
 
 	Texture2D normal_map("stones_norm.jpg", 0);
 	Texture2D diffuse_map("stones.jpg", 1);

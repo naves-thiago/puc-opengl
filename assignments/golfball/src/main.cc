@@ -113,7 +113,7 @@ int main()
 	}
 
 	Shader light_shader("light.vs", "light.fs");
-	Shader obj_shader("object.vs", "object.fs");
+	Shader obj_shader("golfball.vs", "golfball.fs");
 
 	float light_vertices[] = {
 		// Positions

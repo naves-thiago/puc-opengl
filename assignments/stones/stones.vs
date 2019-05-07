@@ -8,25 +8,19 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
-out VS_OUT {
-	vec3 FragPos;
-	vec2 TexCoords;
-	mat3 TBN;
-} vs_out;
+out vec3 FragPos;
+out vec2 TexCoords;
+out mat3 TBN;
 
 void main() {
 	gl_Position = projection * view * model * vec4(aPos, 1.0);
-	//FragPos = vec3(model * vec4(aPos, 1.0)); // Convert position to world coords
-	// Transform the normal vector to the world coords, using the normal matrix
-	//Normal = mat3(transpose(inverse(model))) * aNormal;
 
 	vec3 T = normalize(vec3(model * vec4(aTangent, 0.0)));
 	vec3 N = normalize(vec3(model * vec4(aNormal, 0.0)));
 	// re-orthogonalize T (may be needed on large meshes due to tangent averaging)
 	T = normalize(T - dot(T, N) * N);
 	vec3 B = cross(N, T);
-	mat3 TBN = mat3(T, B, N);
-	vs_out.TBN = TBN;
-	vs_out.TexCoords = aTexture;
-	vs_out.FragPos = vec3(model * vec4(aPos, 1.0)); // Convert position to world coords
+	TBN = mat3(T, B, N);
+	TexCoords = aTexture;
+	FragPos = vec3(model * vec4(aPos, 1.0)); // Convert position to world coords
 }

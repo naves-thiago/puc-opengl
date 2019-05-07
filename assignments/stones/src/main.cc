@@ -18,8 +18,8 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void process_input(GLFWwindow *window);
 
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH = 1280;
+const unsigned int SCR_HEIGHT = 720;
 
 Camera camera((float)SCR_WIDTH / SCR_HEIGHT);
 
@@ -32,6 +32,7 @@ struct Vertex {
 
 std::vector<Vertex> obj_data;
 std::vector<unsigned int> indices;
+bool mouse_captured = false;
 
 void load_obj(const std::string &fname) {
 //	const aiScene *scene = import.ReadFile(fname, aiProcess_Triangulate |
@@ -95,8 +96,6 @@ int main()
 	}
 	glfwMakeContextCurrent(window);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // Hide / capture cursor
-	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
 
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -273,6 +272,20 @@ void process_input(GLFWwindow *window)
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
 
+	static int last_enter_state = GLFW_RELEASE;
+	if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS && last_enter_state == GLFW_RELEASE) {
+		mouse_captured = ! mouse_captured;
+		if (mouse_captured) {
+			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // Hide / capture cursor
+			camera.zero_mouse();
+			glfwSetCursorPosCallback(window, mouse_callback);
+		}
+		else {
+			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+			glfwSetCursorPosCallback(window, NULL);
+		}
+	}
+	last_enter_state = glfwGetKey(window, GLFW_KEY_ENTER);
 	camera.key_press(window);
 }
 

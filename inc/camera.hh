@@ -225,6 +225,11 @@ public:
 		look(xoffset, yoffset);
 	}
 
+	// Set next mouse position in mouse_move() as the reference
+	void zero_mouse(void) {
+		first_mouse = true;
+	}
+
 	void key_press(GLFWwindow *window)
 	{
 		float current_frame = glfwGetTime();

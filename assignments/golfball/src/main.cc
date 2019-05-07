@@ -227,7 +227,7 @@ int main()
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		glm::vec3 light_pos(1.2f, 1.0f, 2.0f);
+		glm::vec3 light_pos(1.2f, 1.0f, 5.0f);
 		glm::mat4 projection = camera.projection_matrix();
 		glm::mat4 view = camera.view_matrix();
 

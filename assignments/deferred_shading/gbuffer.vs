@@ -18,7 +18,6 @@ uniform mat4 projection;
 
 out vec2 TexCoords;       // Texture coords
 out vec3 TangentLightPos; // Light Position (tangent space)
-out vec3 TangentViewPos;  // Eye Position (tangent space)
 out vec3 TangentFragPos;  // Fragment Position (tangent space)
 
 uniform vec3 viewPos;
@@ -26,14 +25,13 @@ uniform vec3 viewPos;
 void main() {
 	gl_Position = projection * view * model * vec4(aPos, 1.0);
 
-	vec3 T = normalize(vec3(model * vec4(aTangent, 0.0)));
-	vec3 N = normalize(vec3(model * vec4(aNormal, 0.0)));
+	vec3 T = normalize(vec3(view * model * vec4(aTangent, 0.0)));
+	vec3 N = normalize(vec3(view * model * vec4(aNormal, 0.0)));
 	// re-orthogonalize T (may be needed on large meshes due to tangent averaging)
 	T = normalize(T - dot(T, N) * N);
 	vec3 B = cross(N, T);
 	mat3 TBNi = transpose(mat3(T, B, N)); // TBN is orthogonal, inverse == transposed
 	TexCoords = aTexture;
-	TangentLightPos = TBNi * light.position;
-	TangentViewPos  = TBNi * viewPos;
-	TangentFragPos  = TBNi * vec3(model * vec4(aPos, 1.0));
+	TangentLightPos = TBNi * vec3(view * vec4(light.position, 1.0));
+	TangentFragPos  = TBNi * vec3(view * model * vec4(aPos, 1.0));
 }

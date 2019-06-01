@@ -165,7 +165,7 @@ int main()
 	glEnable(GL_DEPTH_TEST);
 
 	unsigned int light_vbo, light_vao, obj_vbo, obj_vao, obj_ebo;
-	// light
+	// ---- light ----
 	glGenVertexArrays(1, &light_vao);
 	glGenBuffers(1, &light_vbo);
 	// bind the Vertex Array Object first, then bind and set vertex buffer(s),
@@ -179,7 +179,7 @@ int main()
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
-	// object
+	// ---- object ----
 	glGenVertexArrays(1, &obj_vao);
 	glGenBuffers(1, &obj_vbo);
 	glBindVertexArray(obj_vao);
@@ -243,11 +243,9 @@ int main()
 		obj_shader.setVec("light.specular", glm::vec3(0.5f));
 		obj_shader.setVec("light.position", light_pos);
 		glm::mat4 obj_model(1.0f);
-		//obj_model = glm::scale(obj_model, glm::vec3(1.0f, 1.0f, 1.0f));
 		obj_shader.setMat("model", obj_model);
 		obj_shader.setMat("view", view);
 		obj_shader.setMat("projection", projection);
-		obj_shader.setVec("viewPos", camera.position);
 		normal_map.activateAndBind();
 		glBindVertexArray(obj_vao);
 		glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);

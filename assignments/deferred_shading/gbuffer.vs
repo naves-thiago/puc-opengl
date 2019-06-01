@@ -5,10 +5,10 @@ layout (location = 2) in vec3 aTangent;  // Tangent vector (obj coords)
 layout (location = 3) in vec2 aTexture;  // Texture coords
 
 struct Light {
-	vec3 position;
-	vec3 ambient;
-	vec3 diffuse;
-	vec3 specular;
+	vec3 position; // Position (world coords)
+	vec3 ambient;  // Ambient color
+	vec3 diffuse;  // Diffuse color
+	vec3 specular; // Specular color
 };
 
 uniform Light light;
@@ -16,10 +16,10 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
-out vec2 TexCoords;
-out vec3 TangentLightPos;
-out vec3 TangentViewPos;
-out vec3 TangentFragPos;
+out vec2 TexCoords;       // Texture coords
+out vec3 TangentLightPos; // Light Position (tangent space)
+out vec3 TangentViewPos;  // Eye Position (tangent space)
+out vec3 TangentFragPos;  // Fragment Position (tangent space)
 
 uniform vec3 viewPos;
 
@@ -31,7 +31,7 @@ void main() {
 	// re-orthogonalize T (may be needed on large meshes due to tangent averaging)
 	T = normalize(T - dot(T, N) * N);
 	vec3 B = cross(N, T);
-	mat3 TBNi = transpose(mat3(T, B, N));
+	mat3 TBNi = transpose(mat3(T, B, N)); // TBN is orthogonal, inverse == transposed
 	TexCoords = aTexture;
 	TangentLightPos = TBNi * light.position;
 	TangentViewPos  = TBNi * viewPos;

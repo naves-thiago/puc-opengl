@@ -1,0 +1,27 @@
+CC=g++
+CFLAGS=-g -Wall -I ../../inc -I ../../assimp/include
+LDFLAGS=-lglfw -framework OpenGL -L ../../assimp/lib -lassimp
+
+PROG=deferred
+
+LIB=glad.o shader.o texture.o stb_image.o
+_LIB=$(addprefix obj/, $(LIB))
+
+all: $(PROG)
+
+clean:
+	rm -f obj/* $(PROG)
+
+$(PROG): $(_LIB) obj/main.o
+	$(CC) $^ -o $@ $(LDFLAGS)
+
+obj/%.o:src/%.cc makefile.mac
+	$(CC) $(CFLAGS) -c $< -o $@
+
+obj/%.o:../src/%.c makefile.mac
+	gcc -g -Wall -I ../../inc -c $< -o $@
+
+obj/%.o:../src/%.cc makefile.mac
+	$(CC) $(CFLAGS) -c $< -o $@
+
+obj/main.o:src/main.cc ../../inc/camera.hh

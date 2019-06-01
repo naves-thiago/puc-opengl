@@ -9,7 +9,6 @@ struct Light {
 
 in vec2 TexCoords;       // Texture coords
 in vec3 TangentLightPos; // Light Position (tangent space)
-in vec3 TangentViewPos;  // Eye Position (tangent space)
 in vec3 TangentFragPos;  // Fragment Position (tangent space)
 
 uniform float shininess;
@@ -30,7 +29,7 @@ void main() {
 	float diff = max(dot(normal, lightDir), 0.0);
 	vec3 diffuse = diff * light.diffuse * color;
 
-	vec3 viewDir = normalize(TangentViewPos - TangentFragPos);
+	vec3 viewDir = normalize(-TangentFragPos);
 	vec3 reflectDir = reflect(-lightDir, normal);
 	float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
 	vec3 specular = spec * light.specular;;

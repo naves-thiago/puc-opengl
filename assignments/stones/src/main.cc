@@ -219,20 +219,23 @@ int main()
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		glm::vec3 light_pos(1.2f, 1.0f, 2.0f);
+		//glm::vec3 light_pos(1.2f, 1.0f, 2.0f);
+		glm::vec3 light_pos(1.2f, 1.0f, 5.0f);
 		glm::mat4 projection = camera.projection_matrix();
 		glm::mat4 view = camera.view_matrix();
 
 		glm::vec3 light_color(1.0f, 1.0f, 1.0f);
 
 		glm::vec3 diffuse_color = light_color * glm::vec3(0.7f); // decrease influence
-		glm::vec3 ambient_color = light_color * glm::vec3(0.1f); // low influence
+		//glm::vec3 ambient_color = light_color * glm::vec3(0.1f); // low influence
+		glm::vec3 ambient_color = light_color * glm::vec3(0.3f); // low influence
 
 		obj_shader.use();
-		obj_shader.setFloat("shininess", 16.0f);
+		obj_shader.setFloat("shininess", 2.5f);
 		obj_shader.setVec("light.ambient",  ambient_color);
 		obj_shader.setVec("light.diffuse",  diffuse_color);
-		obj_shader.setVec("light.specular", glm::vec3(0.5f));
+		//obj_shader.setVec("light.specular", glm::vec3(0.5f));
+		obj_shader.setVec("light.specular", glm::vec3(0.2f));
 		obj_shader.setVec("light.position", light_pos);
 		glm::mat4 obj_model(1.0f);
 		obj_shader.setMat("model", obj_model);

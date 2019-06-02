@@ -1,26 +1,16 @@
 #version 330 core
-layout (location = 0) in vec3 aPos;      // Vertex Position (obj coords)
-layout (location = 1) in vec3 aNormal;   // Vertex normal (obj coords)
-layout (location = 2) in vec3 aTangent;  // Tangent vector (obj coords)
+layout (location = 0) in vec3 aPos;      // Vertex Position (obj space)
+layout (location = 1) in vec3 aNormal;   // Vertex normal (obj space)
+layout (location = 2) in vec3 aTangent;  // Tangent vector (obj space)
 layout (location = 3) in vec2 aTexture;  // Texture coords
 
-struct Light {
-	vec3 position; // Position (world coords)
-	vec3 ambient;  // Ambient color
-	vec3 diffuse;  // Diffuse color
-	vec3 specular; // Specular color
-};
-
-uniform Light light;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
-out vec2 TexCoords;       // Texture coords
-out vec3 TangentLightPos; // Light Position (tangent space)
-out vec3 TangentFragPos;  // Fragment Position (tangent space)
-
-uniform vec3 viewPos;
+out vec3 FragPos;   // Fragment position (eye space))
+out vec2 TexCoords; // Texture coords
+out mat3 TBN;
 
 void main() {
 	gl_Position = projection * view * model * vec4(aPos, 1.0);
@@ -30,8 +20,7 @@ void main() {
 	// re-orthogonalize T (may be needed on large meshes due to tangent averaging)
 	T = normalize(T - dot(T, N) * N);
 	vec3 B = cross(N, T);
-	mat3 TBNi = transpose(mat3(T, B, N)); // TBN is orthogonal, inverse == transposed
+	TBN = mat3(T, B, N);
 	TexCoords = aTexture;
-	TangentLightPos = TBNi * vec3(view * vec4(light.position, 1.0));
-	TangentFragPos  = TBNi * vec3(view * model * vec4(aPos, 1.0));
+	FragPos = vec3(view * model * vec4(aPos, 1.0)); // Convert position to eye space
 }

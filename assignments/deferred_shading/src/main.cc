@@ -42,6 +42,16 @@ std::vector<Vertex> obj_data;
 std::vector<unsigned int> indices;
 bool mouse_captured = false;
 
+float quad_vertices[] = {
+	// Pos       Tex
+	-1,  1,  0,   0, 0, // Top Left
+	-1, -1,  0,   0, 1, // Bottom Left
+	 1, -1,  0,   1, 1, // Bottom Right
+	 1, -1,  0,   1, 1, // Bottom Right (2)
+	 1,  1,  0,   1, 0, // Top Right    (2)
+	-1,  1,  0,   0, 0  // Top Left     (2)
+};
+
 void load_obj(const std::string &fname) {
 //	const aiScene *scene = import.ReadFile(fname, aiProcess_Triangulate |
 //			aiProcess_CalcTangentSpace | aiProcess_FlipUVs);
@@ -84,6 +94,48 @@ void load_obj(const std::string &fname) {
 	}
 }
 
+unsigned int gBuffer;
+unsigned int gPosition, gNormal;
+unsigned int createGBuffer(void)
+{
+	glGenFramebuffers(1, &gBuffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
+
+	// position color buffer
+	glGenTextures(1, &gPosition);
+	glBindTexture(GL_TEXTURE_2D, gPosition);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gPosition, 0);
+
+	// normal color buffer
+	glGenTextures(1, &gNormal);
+	glBindTexture(GL_TEXTURE_2D, gNormal);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, gNormal, 0);
+
+	// tell OpenGL which color attachments we'll use (of this framebuffer) for rendering
+	unsigned int attachments[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+	glDrawBuffers(2, attachments);
+
+	// create and attach depth buffer (renderbuffer)
+	unsigned int rboDepth;
+	glGenRenderbuffers(1, &rboDepth);
+	glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, SCR_WIDTH, SCR_HEIGHT);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepth);
+
+	// finally check if framebuffer is complete
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "Framebuffer not complete!" << std::endl;
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	return gBuffer;
+}
+
 int main()
 {
 	glfwInit();
@@ -112,8 +164,10 @@ int main()
 		return -1;
 	}
 
-	Shader light_shader("cube.vs", "cube.fs");
+	Shader cube_shader("cube.vs", "cube.fs");
 	Shader obj_shader("gbuffer.vs", "gbuffer.fs");
+	Shader light_shader("light.vs", "light.fs");
+	//Shader quad_shader("tmp.vs", "tmp.fs");
 
 	float light_vertices[] = {
 		// Positions
@@ -164,8 +218,8 @@ int main()
 
 	glEnable(GL_DEPTH_TEST);
 
-	unsigned int light_vbo, light_vao, obj_vbo, obj_vao, obj_ebo;
-	// ---- light ----
+	unsigned int light_vbo, light_vao, obj_vbo, obj_vao, obj_ebo, quad_vbo, quad_vao;
+	// ---- light cube ----
 	glGenVertexArrays(1, &light_vao);
 	glGenBuffers(1, &light_vbo);
 	// bind the Vertex Array Object first, then bind and set vertex buffer(s),
@@ -212,6 +266,24 @@ int main()
 			(void*)offsetof(Vertex, texture));
 	glEnableVertexAttribArray(3);
 
+	// ---- quad ----
+	glGenVertexArrays(1, &quad_vao);
+	glGenBuffers(1, &quad_vbo);
+	glBindVertexArray(quad_vao);
+
+	glBindBuffer(GL_ARRAY_BUFFER, quad_vbo);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertices), quad_vertices, GL_STATIC_DRAW);
+
+	// position attribute
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	// texture attribute
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	// -------------------
+
 	Texture2D normal_map("golfball.png", 0);
 	obj_shader.use();
 	obj_shader.setInt("normalMap", 0);
@@ -219,6 +291,8 @@ int main()
 	camera.set_move_seed(2.0f);
 	camera.set_pos(0, 0, 5.5, 0, -90, 45);
 	camera.set_default_pos(0, 0, 5.5, 0, -90, 45);
+
+	createGBuffer();
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -236,12 +310,8 @@ int main()
 		glm::vec3 diffuse_color = light_color * glm::vec3(0.7f); // decrease influence
 		glm::vec3 ambient_color = light_color * glm::vec3(0.1f); // low influence
 
+		glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
 		obj_shader.use();
-		obj_shader.setFloat("shininess", 16.0f);
-		obj_shader.setVec("light.ambient",  ambient_color);
-		obj_shader.setVec("light.diffuse",  diffuse_color);
-		obj_shader.setVec("light.specular", glm::vec3(0.5f));
-		obj_shader.setVec("light.position", light_pos);
 		glm::mat4 obj_model(1.0f);
 		obj_shader.setMat("model", obj_model);
 		obj_shader.setMat("view", view);
@@ -250,14 +320,31 @@ int main()
 		glBindVertexArray(obj_vao);
 		glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		light_shader.use();
-		light_shader.setVec("lightColor", light_color);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, gPosition);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, gNormal);
+
+		light_shader.setFloat("shininess", 16.0f);
+		light_shader.setVec("light.ambient",  ambient_color);
+		light_shader.setVec("light.diffuse",  diffuse_color);
+		light_shader.setVec("light.specular", glm::vec3(0.5f));
+		light_shader.setVec("light.position", light_pos);
+		light_shader.setMat("view", view);
+		glBindVertexArray(quad_vao);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		cube_shader.use();
+		cube_shader.setVec("lightColor", light_color);
 		glm::mat4 light_model(1.0f);
 		light_model = glm::translate(light_model, light_pos);
 		light_model = glm::scale(light_model, glm::vec3(0.2f));
-		light_shader.setMat("model", light_model);
-		light_shader.setMat("view", view);
-		light_shader.setMat("projection", projection);
+		cube_shader.setMat("model", light_model);
+		cube_shader.setMat("view", view);
+		cube_shader.setMat("projection", projection);
 		glBindVertexArray(light_vao);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
 

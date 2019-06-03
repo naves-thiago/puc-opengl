@@ -214,7 +214,7 @@ int main()
 	obj_shader.setInt("normalMap", 0);
 	obj_shader.setInt("diffuseMap", 1);
 
-	camera.set_move_seed(2.0f);
+	camera.set_move_speed(2.0f);
 
 	while (!glfwWindowShouldClose(window))
 	{

@@ -8,8 +8,6 @@ struct Light {
 };
 
 in vec2 TexCoords;
-//in vec3 FragNormal;
-//in vec3 FragPos;
 out vec4 FragColor;
 
 uniform sampler2D gPosition; // Fragment Positions (eye space)
@@ -22,9 +20,9 @@ uniform float shininess;
 void main() {
 	vec3 position = texture(gPosition, TexCoords).rgb;
 	vec3 FragNormal = texture(gNormal, TexCoords).rgb;
-	//FragColor = vec4(FragNormal, 1.0);
-//	FragColor = vec4(TexCoords, 0.0, 1.0);
-//
+//	FragColor = vec4(position, 1.0);
+//	FragColor = vec4(position * FragNormal, 1.0);
+
 	vec3 color = vec3(1.0);
 
 	vec3 ambient = light.ambient * color;
@@ -34,12 +32,13 @@ void main() {
 	float diff = max(dot(FragNormal, lightDir), 0.0);
 	vec3 diffuse = diff * light.diffuse * color;
 
-	vec3 viewDir = normalize(-position);
-	vec3 reflectDir = reflect(-lightDir, FragNormal);
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
-	vec3 specular = spec * light.specular;
+//	vec3 viewDir = normalize(-position);
+//	vec3 reflectDir = reflect(-lightDir, FragNormal);
+//	float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+//	vec3 specular = spec * light.specular;
 
-	vec3 result = ambient + diffuse + specular;
+//	vec3 result = ambient + diffuse + specular;
+	vec3 result = ambient + diffuse;
 	FragColor = vec4(result, 1.0);
 
 	// TEST //

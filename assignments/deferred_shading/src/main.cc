@@ -41,6 +41,7 @@ struct Vertex {
 std::vector<Vertex> obj_data;
 std::vector<unsigned int> indices;
 bool mouse_captured = false;
+int mode = 1; // 1 - Normal Render, 2 - Position buffer, 3 - Normal buffer
 
 float quad_vertices[] = {
 	// Pos       Tex
@@ -122,11 +123,11 @@ unsigned int createGBuffer(void)
 	glDrawBuffers(2, attachments);
 
 	// create and attach depth buffer (renderbuffer)
-//	unsigned int rboDepth;
-//	glGenRenderbuffers(1, &rboDepth);
-//	glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
-//	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, SCR_WIDTH, SCR_HEIGHT);
-//	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepth);
+	unsigned int rboDepth;
+	glGenRenderbuffers(1, &rboDepth);
+	glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, SCR_WIDTH, SCR_HEIGHT);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepth);
 
 	// finally check if framebuffer is complete
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -167,6 +168,7 @@ int main()
 	Shader cube_shader("cube.vs", "cube.fs");
 	Shader obj_shader("gbuffer.vs", "gbuffer.fs");
 	Shader light_shader("light.vs", "light.fs");
+	Shader buffer_shader("buffer.vs", "buffer.fs");
 	//Shader quad_shader("tmp.vs", "tmp.fs");
 
 	float light_vertices[] = {
@@ -286,7 +288,7 @@ int main()
 
 	Texture2D normal_map("golfball.png", 0);
 	obj_shader.use();
-	//obj_shader.setInt("normalMap", 0);
+	obj_shader.setInt("normalMap", 0);
 
 	camera.set_move_seed(2.0f);
 	camera.set_pos(0, 0, 5.5, 0, -90, 45);
@@ -324,20 +326,39 @@ int main()
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		light_shader.use();
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, gPosition);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, gNormal);
 
-		light_shader.setFloat("shininess", 16.0f);
-		light_shader.setVec("light.ambient",  ambient_color);
-		light_shader.setVec("light.diffuse",  diffuse_color);
-		light_shader.setVec("light.specular", glm::vec3(0.5f));
-		light_shader.setVec("light.position", light_pos);
-		light_shader.setMat("view", view);
-		glBindVertexArray(quad_vao);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+		if (mode == 1) {
+			light_shader.use();
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, gPosition);
+			glActiveTexture(GL_TEXTURE1);
+			glBindTexture(GL_TEXTURE_2D, gNormal);
+
+			//light_shader.setFloat("shininess", 16.0f);
+			light_shader.setVec("light.ambient",  ambient_color);
+			light_shader.setVec("light.diffuse",  diffuse_color);
+			light_shader.setVec("light.specular", glm::vec3(0.5f));
+			light_shader.setVec("light.position", light_pos);
+			light_shader.setMat("view", view);
+			glBindVertexArray(quad_vao);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+		}
+
+		if (mode == 2) {
+			buffer_shader.use();
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, gPosition);
+			glBindVertexArray(quad_vao);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+		}
+
+		if (mode == 3) {
+			buffer_shader.use();
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, gNormal);
+			glBindVertexArray(quad_vao);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+		}
 
 		/*
 		cube_shader.use();
@@ -382,6 +403,19 @@ void process_input(GLFWwindow *window)
 		}
 	}
 	last_enter_state = glfwGetKey(window, GLFW_KEY_ENTER);
+
+	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
+		mode = 1;
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
+		mode = 2;
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
+		mode = 3;
+	}
+
 	camera.key_press(window);
 }
 

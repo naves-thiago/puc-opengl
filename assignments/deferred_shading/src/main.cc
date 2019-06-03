@@ -290,7 +290,7 @@ int main()
 	obj_shader.use();
 	obj_shader.setInt("normalMap", 0);
 
-	camera.set_move_seed(2.0f);
+	camera.set_move_speed(2.0f);
 	camera.set_pos(0, 0, 5.5, 0, -90, 45);
 	camera.set_default_pos(0, 0, 5.5, 0, -90, 45);
 

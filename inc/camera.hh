@@ -136,7 +136,7 @@ public:
 		update_vectors();
 	}
 
-	void set_move_seed(float value) {
+	void set_move_speed(float value) {
 		move_speed = value;
 	}
 

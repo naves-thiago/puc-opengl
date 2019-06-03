@@ -11,8 +11,10 @@ uniform sampler2D normalMap;
 out vec4 FragColor;
 
 void main() {
-	gNormal = texture(normalMap, TexCoords).rgb;
-	gNormal = normalize(gNormal * 2.0 - 1.0);
-	gNormal = normalize(TBN * gNormal);
+	//gNormal = texture(normalMap, TexCoords).rgb;
+	//gNormal = normalize(gNormal * 2.0 - 1.0);
+	//gNormal = normalize(TBN * gNormal);
+	gNormal = vec3(0.0, 1.0, 0.0);
 	gPosition = FragPos;
+	//gPosition = vec3(1.0, 0.0, 0.0);
 }

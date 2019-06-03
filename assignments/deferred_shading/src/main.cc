@@ -44,12 +44,12 @@ bool mouse_captured = false;
 
 float quad_vertices[] = {
 	// Pos       Tex
-	-1,  1,  0,   0, 0, // Top Left
-	-1, -1,  0,   0, 1, // Bottom Left
-	 1, -1,  0,   1, 1, // Bottom Right
-	 1, -1,  0,   1, 1, // Bottom Right (2)
-	 1,  1,  0,   1, 0, // Top Right    (2)
-	-1,  1,  0,   0, 0  // Top Left     (2)
+	-1,  1,  0,   0, 1, // Top Left
+	-1, -1,  0,   0, 0, // Bottom Left
+	 1, -1,  0,   1, 0, // Bottom Right
+	 1, -1,  0,   1, 0, // Bottom Right (2)
+	 1,  1,  0,   1, 1, // Top Right    (2)
+	-1,  1,  0,   0, 1  // Top Left     (2)
 };
 
 void load_obj(const std::string &fname) {
@@ -122,11 +122,11 @@ unsigned int createGBuffer(void)
 	glDrawBuffers(2, attachments);
 
 	// create and attach depth buffer (renderbuffer)
-	unsigned int rboDepth;
-	glGenRenderbuffers(1, &rboDepth);
-	glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, SCR_WIDTH, SCR_HEIGHT);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepth);
+//	unsigned int rboDepth;
+//	glGenRenderbuffers(1, &rboDepth);
+//	glBindRenderbuffer(GL_RENDERBUFFER, rboDepth);
+//	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, SCR_WIDTH, SCR_HEIGHT);
+//	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rboDepth);
 
 	// finally check if framebuffer is complete
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -286,13 +286,14 @@ int main()
 
 	Texture2D normal_map("golfball.png", 0);
 	obj_shader.use();
-	obj_shader.setInt("normalMap", 0);
+	//obj_shader.setInt("normalMap", 0);
 
 	camera.set_move_seed(2.0f);
 	camera.set_pos(0, 0, 5.5, 0, -90, 45);
 	camera.set_default_pos(0, 0, 5.5, 0, -90, 45);
 
 	createGBuffer();
+	light_shader.use(); // ??
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -311,6 +312,7 @@ int main()
 		glm::vec3 ambient_color = light_color * glm::vec3(0.1f); // low influence
 
 		glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		obj_shader.use();
 		glm::mat4 obj_model(1.0f);
 		obj_shader.setMat("model", obj_model);
@@ -337,6 +339,7 @@ int main()
 		glBindVertexArray(quad_vao);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
+		/*
 		cube_shader.use();
 		cube_shader.setVec("lightColor", light_color);
 		glm::mat4 light_model(1.0f);
@@ -347,7 +350,7 @@ int main()
 		cube_shader.setMat("projection", projection);
 		glBindVertexArray(light_vao);
 		glDrawArrays(GL_TRIANGLES, 0, 36);
-
+		*/
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}

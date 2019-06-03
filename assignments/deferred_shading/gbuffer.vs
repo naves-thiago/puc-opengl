@@ -23,4 +23,5 @@ void main() {
 	TBN = mat3(T, B, N);
 	TexCoords = aTexture;
 	FragPos = vec3(view * model * vec4(aPos, 1.0)); // Convert position to eye space
+	//FragPos = vec3(model * vec4(aPos, 1.0));
 }

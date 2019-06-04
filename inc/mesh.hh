@@ -18,7 +18,8 @@ struct Attribute {
 
 class Attrib_array {
 public:
-	Attrib_array(const float &data) : data(data) {
+	Attrib_array(const float &data, size_t data_size, GLenum usage = GL_STATIC_DRAW) :
+		data(data), data_size(data_size), usage(usage) {
 		glGenBuffers(1, &vbo);
 	}
 
@@ -30,8 +31,25 @@ public:
 		attribs.push_back(b);
 	}
 
+	// Must be called with VAO alread bound
+	void send_data(void) {
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		glBufferData(GL_ARRAY_BUFFER, data_size, data, usage);
+		for (auto const &a: attribs) {
+			glVertexAttribPointer(a.id, a.length, GL_FLOAT, GL_FALSE, a.length * sizeof(float),
+					a.offset);
+			glEnableVertexAttribArray(a.id);
+		}
+	}
+
+	~Attrib_array() {
+		glDeleteBuffers(1, &vbo);
+	}
+
 	unsigned int vbo;
+	GLenum usage;
 	const float &data;
+	const size_t data_size;
 	std::vector<Attribute> attribs;
 };
 
@@ -42,6 +60,7 @@ public:
 	bool add_buffer(const Attrib_array &b);
 	void use(void);
 
+	// glBindVertexArray(vao);
 private:
 	unsigned int vao = 0;
 	unsigned int vbo = 0;

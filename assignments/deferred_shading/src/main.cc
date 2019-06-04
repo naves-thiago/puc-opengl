@@ -96,13 +96,13 @@ void load_obj(const std::string &fname) {
 }
 
 unsigned int gBuffer;
-unsigned int gPosition, gNormal;
+unsigned int gPosition, gNormal, gColor;
 unsigned int createGBuffer(void)
 {
 	glGenFramebuffers(1, &gBuffer);
 	glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
 
-	// position color buffer
+	// Position buffer
 	glGenTextures(1, &gPosition);
 	glBindTexture(GL_TEXTURE_2D, gPosition);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
@@ -110,7 +110,7 @@ unsigned int createGBuffer(void)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, gPosition, 0);
 
-	// normal color buffer
+	// Normal buffer
 	glGenTextures(1, &gNormal);
 	glBindTexture(GL_TEXTURE_2D, gNormal);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGB, GL_FLOAT, NULL);
@@ -118,9 +118,17 @@ unsigned int createGBuffer(void)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, gNormal, 0);
 
+	// Color buffer
+	glGenTextures(1, &gColor);
+	glBindTexture(GL_TEXTURE_2D, gColor);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, SCR_WIDTH, SCR_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, gColor, 0);
+
 	// tell OpenGL which color attachments we'll use (of this framebuffer) for rendering
-	unsigned int attachments[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
-	glDrawBuffers(2, attachments);
+	unsigned int attachments[3] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
+	glDrawBuffers(3, attachments);
 
 	// create and attach depth buffer (renderbuffer)
 	unsigned int rboDepth;
@@ -295,13 +303,17 @@ int main()
 	camera.set_default_pos(0, 0, 5.5, 0, -90, 45);
 
 	createGBuffer();
-	light_shader.use(); // ??
+	light_shader.use();
+	light_shader.setInt("gPosition", 0);
+	light_shader.setInt("gNormal", 1);
+	light_shader.setInt("gColor", 2);
 
 	while (!glfwWindowShouldClose(window))
 	{
 		process_input(window);
 
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		//glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		glClearColor(0, 0, 0, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glm::vec3 light_pos(1.2f, 1.0f, 5.0f);
@@ -333,8 +345,10 @@ int main()
 			glBindTexture(GL_TEXTURE_2D, gPosition);
 			glActiveTexture(GL_TEXTURE1);
 			glBindTexture(GL_TEXTURE_2D, gNormal);
+			glActiveTexture(GL_TEXTURE2);
+			glBindTexture(GL_TEXTURE_2D, gColor);
 
-			//light_shader.setFloat("shininess", 16.0f);
+			light_shader.setFloat("shininess", 16.0f);
 			light_shader.setVec("light.ambient",  ambient_color);
 			light_shader.setVec("light.diffuse",  diffuse_color);
 			light_shader.setVec("light.specular", glm::vec3(0.5f));
@@ -356,6 +370,14 @@ int main()
 			buffer_shader.use();
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, gNormal);
+			glBindVertexArray(quad_vao);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+		}
+
+		if (mode == 4) {
+			buffer_shader.use();
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, gColor);
 			glBindVertexArray(quad_vao);
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 		}
@@ -414,6 +436,10 @@ void process_input(GLFWwindow *window)
 
 	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
 		mode = 3;
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) {
+		mode = 4;
 	}
 
 	camera.key_press(window);

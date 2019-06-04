@@ -354,6 +354,23 @@ int main()
 			light_shader.setMat("view", view);
 			glBindVertexArray(quad_vao);
 			glDrawArrays(GL_TRIANGLES, 0, 6);
+
+			// copy depth buffer (may break... in particular with MSAA)
+			glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer);
+			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0); // write to default framebuffer
+			glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+			cube_shader.use();
+			cube_shader.setVec("lightColor", light_color);
+			glm::mat4 light_model(1.0f);
+			light_model = glm::translate(light_model, light_pos);
+			light_model = glm::scale(light_model, glm::vec3(0.2f));
+			cube_shader.setMat("model", light_model);
+			cube_shader.setMat("view", view);
+			cube_shader.setMat("projection", projection);
+			glBindVertexArray(light_vao);
+			glDrawArrays(GL_TRIANGLES, 0, 36);
 		}
 
 		if (mode == 2) {
@@ -380,18 +397,6 @@ int main()
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 		}
 
-		/*
-		cube_shader.use();
-		cube_shader.setVec("lightColor", light_color);
-		glm::mat4 light_model(1.0f);
-		light_model = glm::translate(light_model, light_pos);
-		light_model = glm::scale(light_model, glm::vec3(0.2f));
-		cube_shader.setMat("model", light_model);
-		cube_shader.setMat("view", view);
-		cube_shader.setMat("projection", projection);
-		glBindVertexArray(light_vao);
-		glDrawArrays(GL_TRIANGLES, 0, 36);
-		*/
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}

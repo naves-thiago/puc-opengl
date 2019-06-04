@@ -8,13 +8,11 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
-out vec3 FragPos;   // Fragment position (eye space))
+out vec3 FragPos;   // Fragment position (eye space)
 out vec2 TexCoords; // Texture coords
 out mat3 TBN;
 
 void main() {
-	gl_Position = projection * view * model * vec4(aPos, 1.0);
-
 	vec3 T = normalize(vec3(view * model * vec4(aTangent, 0.0)));
 	vec3 N = normalize(vec3(view * model * vec4(aNormal, 0.0)));
 	// re-orthogonalize T (may be needed on large meshes due to tangent averaging)
@@ -23,5 +21,5 @@ void main() {
 	TBN = mat3(T, B, N);
 	TexCoords = aTexture;
 	FragPos = vec3(view * model * vec4(aPos, 1.0)); // Convert position to eye space
-	//FragPos = vec3(model * vec4(aPos, 1.0));
+	gl_Position = projection * view * model * vec4(aPos, 1.0);
 }

@@ -1,6 +1,7 @@
 #version 330 core
 layout (location = 0) out vec3 gPosition;
 layout (location = 1) out vec3 gNormal;
+layout (location = 2) out vec4 gColor;
 
 in vec3 FragPos;   // Fragment position (eye space)
 in vec2 TexCoords; // Texture coords
@@ -17,4 +18,5 @@ void main() {
 //	gNormal = vec3(0.0, 0.0, 1.0);
 	gPosition = FragPos;
 	//gPosition = vec3(1.0, 0.0, 0.0);
+	gColor = vec4(1.0);
 }

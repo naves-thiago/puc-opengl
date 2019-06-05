@@ -20,6 +20,11 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void process_input(GLFWwindow *window);
+unsigned int createGBuffer(void);
+void create_lights(void);
+void update_lights(bool restart);
+void draw_lights(const Shader &s);
+void draw_light_cubes(const Shader &cube_shader);
 
 const unsigned int SCR_WIDTH = 1280;
 const unsigned int SCR_HEIGHT = 720;
@@ -109,8 +114,7 @@ void load_obj(const std::string &fname) {
 
 unsigned int gBuffer;
 unsigned int gPosition, gNormal, gColor;
-unsigned int createGBuffer(void)
-{
+unsigned int createGBuffer(void) {
 	glGenFramebuffers(1, &gBuffer);
 	glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
 
@@ -202,10 +206,18 @@ void draw_lights(const Shader &s) {
 		s.setVec("lights[" + std::to_string(i) + "].specular", glm::vec3(0.5f));
 		s.setVec("lights[" + std::to_string(i) + "].position", light_pos);
 	}
-//	glm::vec3 light_color = l.color;
-//	glm::vec3 diffuse_color = light_color * glm::vec3(0.7f); // decrease influence
-//	glm::vec3 ambient_color = light_color * glm::vec3(0.1f); // low influence
+}
 
+void draw_light_cubes(const Shader &cube_shader) {
+	for (int i = 0; i<LIGHT_COUNT; i++) {
+		Light &l = lights[i];
+		cube_shader.setVec("lightColor", glm::normalize(l.color));
+		glm::mat4 light_model(1.0f);
+		light_model = glm::translate(light_model, l.position);
+		light_model = glm::scale(light_model, glm::vec3(0.2f));
+		cube_shader.setMat("model", light_model);
+		glDrawArrays(GL_TRIANGLES, 0, 36);
+	}
 }
 
 int main()
@@ -370,10 +382,6 @@ int main()
 
 			light_shader.setFloat("shininess", 16.0f);
 			draw_lights(light_shader);
-			//light_shader.setVec("light.ambient",  ambient_color);
-			//light_shader.setVec("light.diffuse",  diffuse_color);
-			//light_shader.setVec("light.specular", glm::vec3(0.5f));
-			//light_shader.setVec("light.position", light_pos);
 			light_shader.setMat("view", view);
 			glBindVertexArray(quad_vao);
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -387,15 +395,10 @@ int main()
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 				cube_shader.use();
-				cube_shader.setVec("lightColor", light_color);
-				glm::mat4 light_model(1.0f);
-				light_model = glm::translate(light_model, light_pos);
-				light_model = glm::scale(light_model, glm::vec3(0.2f));
-				cube_shader.setMat("model", light_model);
 				cube_shader.setMat("view", view);
 				cube_shader.setMat("projection", projection);
 				glBindVertexArray(light_vao);
-				glDrawArrays(GL_TRIANGLES, 0, 36);
+				draw_light_cubes(cube_shader);
 			}
 		}
 		else {

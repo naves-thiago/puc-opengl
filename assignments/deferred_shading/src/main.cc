@@ -12,6 +12,9 @@
 #include <iostream>
 #include <cstddef>
 #include <vector>
+#include <ctime>
+#include <cstdlib>
+#include "cube.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -20,7 +23,7 @@ void process_input(GLFWwindow *window);
 
 const unsigned int SCR_WIDTH = 1280;
 const unsigned int SCR_HEIGHT = 720;
-
+const unsigned int LIGHT_COUNT = 20;
 Camera camera((float)SCR_WIDTH / SCR_HEIGHT);
 
 struct vec3 {
@@ -38,19 +41,27 @@ struct Vertex {
 	vec2 texture;
 };
 
+struct Light {
+	glm::vec3 color;
+	glm::vec3 position;
+	glm::vec3 axis;
+	float speed;
+};
+
 std::vector<Vertex> obj_data;
 std::vector<unsigned int> indices;
 bool mouse_captured = false;
-int mode = 1; // 1 - Normal Render, 2 - Position buffer, 3 - Normal buffer
+int mode = 1; // 1 - Normal Render, 2 - Position buffer, 3 - Normal buffer, 4 - Color buffer
+std::vector<Light> lights;
+bool show_lights = true;
+bool animate = true;
 
 float quad_vertices[] = {
 	// Pos       Tex
 	-1,  1,  0,   0, 1, // Top Left
 	-1, -1,  0,   0, 0, // Bottom Left
+	 1,  1,  0,   1, 1, // Top Right
 	 1, -1,  0,   1, 0, // Bottom Right
-	 1, -1,  0,   1, 0, // Bottom Right (2)
-	 1,  1,  0,   1, 1, // Top Right    (2)
-	-1,  1,  0,   0, 1  // Top Left     (2)
 };
 
 void load_obj(const std::string &fname) {
@@ -145,6 +156,22 @@ unsigned int createGBuffer(void)
 	return gBuffer;
 }
 
+Light l;
+void create_lights(void) {
+	
+	srand(time(NULL));
+	#define randf() ((rand() % 255) / 255.0f)
+	for (unsigned int i=0; i<LIGHT_COUNT; i++) {
+		l.color = glm::vec3(randf(), randf(), randf());
+		glm::vec3 axis(rand() % 255, rand() % 255, rand() % 255);
+		axis = glm::normalize(axis);
+		l.axis = axis;
+		glm::vec3 tmp = axis * (4 + 2 * (rand() % 100) / 100.0f); // Distance in [6, 10] from (0, 0)
+		l.position = glm::cross(tmp, glm::vec3(1.0f, 0.0f, 0.0f));
+		l.speed = glm::radians(20.0f + rand() % 50);
+	}
+}
+
 int main()
 {
 	glfwInit();
@@ -178,51 +205,6 @@ int main()
 	Shader light_shader("light.vs", "light.fs");
 	Shader buffer_shader("buffer.vs", "buffer.fs");
 
-	float light_vertices[] = {
-		// Positions
-		-0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f,  0.5f, -0.5f,
-		 0.5f,  0.5f, -0.5f,
-		-0.5f,  0.5f, -0.5f,
-		-0.5f, -0.5f, -0.5f,
-
-		-0.5f, -0.5f,  0.5f,
-		 0.5f, -0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
-		-0.5f,  0.5f,  0.5f,
-		-0.5f, -0.5f,  0.5f,
-
-		-0.5f,  0.5f,  0.5f,
-		-0.5f,  0.5f, -0.5f,
-		-0.5f, -0.5f, -0.5f,
-		-0.5f, -0.5f, -0.5f,
-		-0.5f, -0.5f,  0.5f,
-		-0.5f,  0.5f,  0.5f,
-
-		 0.5f,  0.5f,  0.5f,
-		 0.5f,  0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
-
-		-0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f, -0.5f,
-		 0.5f, -0.5f,  0.5f,
-		 0.5f, -0.5f,  0.5f,
-		-0.5f, -0.5f,  0.5f,
-		-0.5f, -0.5f, -0.5f,
-
-		-0.5f,  0.5f, -0.5f,
-		 0.5f,  0.5f, -0.5f,
-		 0.5f,  0.5f,  0.5f,
-		 0.5f,  0.5f,  0.5f,
-		-0.5f,  0.5f,  0.5f,
-		-0.5f,  0.5f, -0.5f,
-	};
-
 	load_obj("golfball.obj");
 
 	glEnable(GL_DEPTH_TEST);
@@ -236,7 +218,7 @@ int main()
 	glBindVertexArray(light_vao);
 
 	glBindBuffer(GL_ARRAY_BUFFER, light_vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(light_vertices), light_vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), cube_vertices, GL_STATIC_DRAW);
 
 	// position attribute
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
@@ -298,7 +280,7 @@ int main()
 	obj_shader.setInt("normalMap", 0);
 
 	camera.set_move_speed(2.0f);
-	camera.set_pos(0, 0, 5.5, 0, -90, 45);
+	camera.set_pos(0, 0, 13, 0, -90, 45);
 	camera.set_default_pos(0, 0, 5.5, 0, -90, 45);
 
 	createGBuffer();
@@ -307,6 +289,10 @@ int main()
 	light_shader.setInt("gNormal", 1);
 	light_shader.setInt("gColor", 2);
 
+	buffer_shader.use();
+	buffer_shader.setInt("gBuffer", 0);
+
+	create_lights();
 	while (!glfwWindowShouldClose(window))
 	{
 		process_input(window);
@@ -314,11 +300,18 @@ int main()
 		glClearColor(0, 0, 0, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		glm::vec3 light_pos(1.2f, 1.0f, 5.0f);
+		//glm::vec3 light_pos(1.2f, 1.0f, 5.0f);
+//		glm::vec3 light_pos = glm::vec3(glm::rotate(glm::mat4(1.0f),
+//				(float)glfwGetTime() * glm::radians(50.0f),
+//				glm::vec3(0.0f, 1.0f, 0.0f)) * glm::vec4(1.2f, 1.0f, 5.0f, 1.0));
+		glm::vec3 light_pos = glm::vec3(
+				glm::rotate(glm::mat4(1.0f), (float)glfwGetTime() * l.speed,
+				l.axis) * glm::vec4(l.position, 1.0));
 		glm::mat4 projection = camera.projection_matrix();
 		glm::mat4 view = camera.view_matrix();
 
-		glm::vec3 light_color(1.0f, 1.0f, 1.0f);
+		//glm::vec3 light_color(1.0f, 1.0f, 1.0f);
+		glm::vec3 light_color = l.color;
 
 		glm::vec3 diffuse_color = light_color * glm::vec3(0.7f); // decrease influence
 		glm::vec3 ambient_color = light_color * glm::vec3(0.1f); // low influence
@@ -353,48 +346,42 @@ int main()
 			light_shader.setVec("light.position", light_pos);
 			light_shader.setMat("view", view);
 			glBindVertexArray(quad_vao);
-			glDrawArrays(GL_TRIANGLES, 0, 6);
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-			// copy depth buffer (may break... in particular with MSAA)
-			glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer);
-			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0); // write to default framebuffer
-			glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT, GL_DEPTH_BUFFER_BIT, GL_NEAREST);
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			if (show_lights) {
+				// copy depth buffer (may break... in particular with MSAA)
+				glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer);
+				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0); // write to default framebuffer
+				glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT,
+						GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+				glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-			cube_shader.use();
-			cube_shader.setVec("lightColor", light_color);
-			glm::mat4 light_model(1.0f);
-			light_model = glm::translate(light_model, light_pos);
-			light_model = glm::scale(light_model, glm::vec3(0.2f));
-			cube_shader.setMat("model", light_model);
-			cube_shader.setMat("view", view);
-			cube_shader.setMat("projection", projection);
-			glBindVertexArray(light_vao);
-			glDrawArrays(GL_TRIANGLES, 0, 36);
+				cube_shader.use();
+				cube_shader.setVec("lightColor", light_color);
+				glm::mat4 light_model(1.0f);
+				light_model = glm::translate(light_model, light_pos);
+				light_model = glm::scale(light_model, glm::vec3(0.2f));
+				cube_shader.setMat("model", light_model);
+				cube_shader.setMat("view", view);
+				cube_shader.setMat("projection", projection);
+				glBindVertexArray(light_vao);
+				glDrawArrays(GL_TRIANGLES, 0, 36);
+			}
 		}
-
-		if (mode == 2) {
+		else {
 			buffer_shader.use();
 			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, gPosition);
-			glBindVertexArray(quad_vao);
-			glDrawArrays(GL_TRIANGLES, 0, 6);
-		}
+			if (mode == 2)
+				glBindTexture(GL_TEXTURE_2D, gPosition);
 
-		if (mode == 3) {
-			buffer_shader.use();
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, gNormal);
-			glBindVertexArray(quad_vao);
-			glDrawArrays(GL_TRIANGLES, 0, 6);
-		}
+			if (mode == 3)
+				glBindTexture(GL_TEXTURE_2D, gNormal);
 
-		if (mode == 4) {
-			buffer_shader.use();
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, gColor);
+			if (mode == 4)
+				glBindTexture(GL_TEXTURE_2D, gColor);
+
 			glBindVertexArray(quad_vao);
-			glDrawArrays(GL_TRIANGLES, 0, 6);
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		}
 
 		glfwSwapBuffers(window);
@@ -428,22 +415,30 @@ void process_input(GLFWwindow *window)
 		}
 	}
 	last_enter_state = glfwGetKey(window, GLFW_KEY_ENTER);
+	
+	static int last_l_state = GLFW_RELEASE;
+	if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS && last_l_state == GLFW_RELEASE) {
+		show_lights = ! show_lights;
+	}
+	last_l_state = glfwGetKey(window, GLFW_KEY_L);
 
-	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
+	static int last_p_state = GLFW_RELEASE;
+	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS && last_p_state == GLFW_RELEASE) {
+		animate = ! animate;
+	}
+	last_p_state = glfwGetKey(window, GLFW_KEY_P);
+
+	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
 		mode = 1;
-	}
 
-	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
+	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
 		mode = 2;
-	}
 
-	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
+	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
 		mode = 3;
-	}
 
-	if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) {
+	if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS)
 		mode = 4;
-	}
 
 	camera.key_press(window);
 }

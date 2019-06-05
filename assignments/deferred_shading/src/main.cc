@@ -162,7 +162,7 @@ void create_lights(void) {
 	srand(time(NULL));
 	#define randf() ((rand() % 255) / 255.0f)
 	for (unsigned int i=0; i<LIGHT_COUNT; i++) {
-		l.color = glm::vec3(randf(), randf(), randf());
+		l.color = glm::normalize(glm::vec3(randf(), randf(), randf())) * ((rand() % 100) / 300.0f);
 		glm::vec3 axis(randf(), randf(), randf());
 		axis = glm::normalize(axis);
 		l.axis = axis;
@@ -190,6 +190,18 @@ void update_lights(bool restart = false) {
 }
 
 void draw_lights(const Shader &s) {
+	for (int i = 0; i<LIGHT_COUNT; i++) {
+		Light &l = lights[i];
+		glm::vec3 light_pos = l.position;
+		glm::vec3 light_color = l.color;
+		glm::vec3 diffuse_color = light_color * glm::vec3(0.7f); // decrease influence
+		glm::vec3 ambient_color = light_color * glm::vec3(0.1f); // low influence
+		
+		s.setVec("lights[" + std::to_string(i) + "].ambient", ambient_color);
+		s.setVec("lights[" + std::to_string(i) + "].diffuse", diffuse_color);
+		s.setVec("lights[" + std::to_string(i) + "].specular", glm::vec3(0.5f));
+		s.setVec("lights[" + std::to_string(i) + "].position", light_pos);
+	}
 //	glm::vec3 light_color = l.color;
 //	glm::vec3 diffuse_color = light_color * glm::vec3(0.7f); // decrease influence
 //	glm::vec3 ambient_color = light_color * glm::vec3(0.1f); // low influence
@@ -329,8 +341,6 @@ int main()
 
 		glm::vec3 light_pos = lights[0].position;
 		glm::vec3 light_color = lights[0].color;
-		glm::vec3 diffuse_color = light_color * glm::vec3(0.7f); // decrease influence
-		glm::vec3 ambient_color = light_color * glm::vec3(0.1f); // low influence
 
 		glm::mat4 projection = camera.projection_matrix();
 		glm::mat4 view = camera.view_matrix();
@@ -359,10 +369,11 @@ int main()
 			glBindTexture(GL_TEXTURE_2D, gColor);
 
 			light_shader.setFloat("shininess", 16.0f);
-			light_shader.setVec("light.ambient",  ambient_color);
-			light_shader.setVec("light.diffuse",  diffuse_color);
-			light_shader.setVec("light.specular", glm::vec3(0.5f));
-			light_shader.setVec("light.position", light_pos);
+			draw_lights(light_shader);
+			//light_shader.setVec("light.ambient",  ambient_color);
+			//light_shader.setVec("light.diffuse",  diffuse_color);
+			//light_shader.setVec("light.specular", glm::vec3(0.5f));
+			//light_shader.setVec("light.position", light_pos);
 			light_shader.setMat("view", view);
 			glBindVertexArray(quad_vao);
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);

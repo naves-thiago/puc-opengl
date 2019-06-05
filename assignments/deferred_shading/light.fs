@@ -14,8 +14,10 @@ uniform sampler2D gPosition; // Fragment Positions (eye space)
 uniform sampler2D gNormal;   // Fragment Normals (eye space)
 uniform sampler2D gColor;    // Fragment colors
 
+const int LIGHT_COUNT = 20;
+
 uniform mat4 view;
-uniform Light light;
+uniform Light lights[LIGHT_COUNT];
 uniform float shininess;
 
 void main() {
@@ -24,18 +26,22 @@ void main() {
 
 	vec3 color = texture(gColor, TexCoords).rgb;
 
-	vec3 ambient = light.ambient * color;
+	vec3 result = vec3(0.0, 0.0, 0.0);
 
-	vec3 lightPos = vec3(view * vec4(light.position, 1.0));
-	vec3 lightDir = normalize(lightPos - FragPos);
-	float diff = max(dot(FragNormal, lightDir), 0.0);
-	vec3 diffuse = diff * light.diffuse * color;
+	for (int i=0; i<LIGHT_COUNT; i++) {
+		vec3 ambient = lights[i].ambient * color;
 
-	vec3 viewDir = normalize(-FragPos);
-	vec3 reflectDir = reflect(-lightDir, FragNormal);
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
-	vec3 specular = spec * light.specular;
+		vec3 lightPos = vec3(view * vec4(lights[i].position, 1.0));
+		vec3 lightDir = normalize(lightPos - FragPos);
+		float diff = max(dot(FragNormal, lightDir), 0.0);
+		vec3 diffuse = diff * lights[i].diffuse * color;
 
-	vec3 result = ambient + diffuse + specular;
+		vec3 viewDir = normalize(-FragPos);
+		vec3 reflectDir = reflect(-lightDir, FragNormal);
+		float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+		vec3 specular = spec * lights[i].specular;
+
+		result = result + ambient + diffuse + specular;
+	}
 	FragColor = vec4(result, 1.0);
 }

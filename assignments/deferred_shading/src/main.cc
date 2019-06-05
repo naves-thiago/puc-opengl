@@ -54,7 +54,8 @@ bool mouse_captured = false;
 int mode = 1; // 1 - Normal Render, 2 - Position buffer, 3 - Normal buffer, 4 - Color buffer
 std::vector<Light> lights;
 bool show_lights = true;
-bool animate = true;
+bool pause = false;
+bool pending_light_restart = false;
 
 float quad_vertices[] = {
 	// Pos       Tex
@@ -156,20 +157,43 @@ unsigned int createGBuffer(void)
 	return gBuffer;
 }
 
-Light l;
 void create_lights(void) {
-	
+	Light l;
 	srand(time(NULL));
 	#define randf() ((rand() % 255) / 255.0f)
 	for (unsigned int i=0; i<LIGHT_COUNT; i++) {
 		l.color = glm::vec3(randf(), randf(), randf());
-		glm::vec3 axis(rand() % 255, rand() % 255, rand() % 255);
+		glm::vec3 axis(randf(), randf(), randf());
 		axis = glm::normalize(axis);
 		l.axis = axis;
 		glm::vec3 tmp = axis * (4 + 2 * (rand() % 100) / 100.0f); // Distance in [6, 10] from (0, 0)
 		l.position = glm::cross(tmp, glm::vec3(1.0f, 0.0f, 0.0f));
 		l.speed = glm::radians(20.0f + rand() % 50);
+		lights.push_back(l);
 	}
+}
+
+void update_lights(bool restart = false) {
+	static float last_time = glfwGetTime();
+	if (restart)
+		last_time = glfwGetTime();
+	float current_time = glfwGetTime();
+	float delta_time = current_time - last_time;
+	last_time = current_time;
+
+	for (int i = 0; i<LIGHT_COUNT; i++) {
+		Light &l = lights[i];
+		l.position = glm::vec3(
+				glm::rotate(glm::mat4(1.0f), delta_time * l.speed, l.axis) *
+				glm::vec4(l.position, 1.0));
+	}
+}
+
+void draw_lights(const Shader &s) {
+//	glm::vec3 light_color = l.color;
+//	glm::vec3 diffuse_color = light_color * glm::vec3(0.7f); // decrease influence
+//	glm::vec3 ambient_color = light_color * glm::vec3(0.1f); // low influence
+
 }
 
 int main()
@@ -300,21 +324,16 @@ int main()
 		glClearColor(0, 0, 0, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		//glm::vec3 light_pos(1.2f, 1.0f, 5.0f);
-//		glm::vec3 light_pos = glm::vec3(glm::rotate(glm::mat4(1.0f),
-//				(float)glfwGetTime() * glm::radians(50.0f),
-//				glm::vec3(0.0f, 1.0f, 0.0f)) * glm::vec4(1.2f, 1.0f, 5.0f, 1.0));
-		glm::vec3 light_pos = glm::vec3(
-				glm::rotate(glm::mat4(1.0f), (float)glfwGetTime() * l.speed,
-				l.axis) * glm::vec4(l.position, 1.0));
-		glm::mat4 projection = camera.projection_matrix();
-		glm::mat4 view = camera.view_matrix();
+		update_lights(pause || pending_light_restart);
+		pending_light_restart = false;
 
-		//glm::vec3 light_color(1.0f, 1.0f, 1.0f);
-		glm::vec3 light_color = l.color;
-
+		glm::vec3 light_pos = lights[0].position;
+		glm::vec3 light_color = lights[0].color;
 		glm::vec3 diffuse_color = light_color * glm::vec3(0.7f); // decrease influence
 		glm::vec3 ambient_color = light_color * glm::vec3(0.1f); // low influence
+
+		glm::mat4 projection = camera.projection_matrix();
+		glm::mat4 view = camera.view_matrix();
 
 		glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -424,7 +443,7 @@ void process_input(GLFWwindow *window)
 
 	static int last_p_state = GLFW_RELEASE;
 	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS && last_p_state == GLFW_RELEASE) {
-		animate = ! animate;
+		pause = ! pause;
 	}
 	last_p_state = glfwGetKey(window, GLFW_KEY_P);
 

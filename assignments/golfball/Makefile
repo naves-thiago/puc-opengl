@@ -9,5 +9,5 @@ else
 endif
 
 clean:
-	rm obj/*
-	rm normal
+	rm -f obj/*
+	rm -f normal

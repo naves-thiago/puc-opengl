@@ -1,0 +1,18 @@
+CC=g++
+CFLAGS=-g -Wall -std=c++11 -I $(BASEDIR)/inc -I $(BASEDIR)/assimp/include
+LDFLAGS=-lglfw -lGL -lX11 -lpthread -lXi -ldl -L $(BASEDIR)/assimp/lib -lassimp
+
+LIB=glad.o shader.o texture.o stb_image.o mesh.o model.o
+_LIB=$(addprefix obj/, $(LIB))
+
+all: $(PROG)
+
+$(PROG): $(_LIB) obj/main.o
+	$(CC) $^ -o $@ $(LDFLAGS)
+
+obj/%.o:src/%.cc makefile.linux
+	$(CC) $(CFLAGS) -c $< -o $@
+
+obj/main.o:src/main.cc $(BASEDIR)/inc/camera.hh
+
+-include $(BASEDIR)/src/linux.mk

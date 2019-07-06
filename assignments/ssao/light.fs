@@ -14,7 +14,8 @@ uniform sampler2D gPosition; // Fragment Positions (eye space)
 uniform sampler2D gNormal;   // Fragment Normals (eye space)
 uniform sampler2D gColor;    // Fragment colors
 
-const int LIGHT_COUNT = 20;
+//const int LIGHT_COUNT = 20;
+const int LIGHT_COUNT = 1;
 
 uniform mat4 view;
 uniform Light lights[LIGHT_COUNT];

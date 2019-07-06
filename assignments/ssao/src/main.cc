@@ -24,7 +24,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void process_input(GLFWwindow *window);
 void create_gBuffer(void);
 void create_lights(void);
-void draw_lights(const Shader &s);
+void send_lights_to_shader(const Shader &s);
 void draw_light_cubes(const Shader &cube_shader);
 
 const unsigned int SCR_WIDTH = 1280;
@@ -182,7 +182,7 @@ void create_lights(void) {
 	lights.push_back(l);
 }
 
-void draw_lights(const Shader &s) {
+void send_lights_to_shader(const Shader &s) {
 	for (int i = 0; i<lights.size(); i++) {
 		Light &l = lights[i];
 		glm::vec3 light_pos = l.position;
@@ -237,13 +237,6 @@ int main()
 		return -1;
 	}
 
-	Shader cube_shader("cube.vs", "cube.fs");
-	Shader obj_shader("gbuffer.vs", "gbuffer.fs");
-	Shader light_shader("light.vs", "light.fs");
-	Shader buffer_shader("buffer.vs", "buffer.fs");
-	Shader ssao_shader("ssao.vs", "ssao.fs");
-	Shader ssao_blur_shader("ssao_blur.vs", "ssao_blur.fs");
-
 	glEnable(GL_DEPTH_TEST);
 
 	unsigned int light_vbo, light_vao, quad_vbo, quad_vao;
@@ -283,31 +276,51 @@ int main()
 
 	// -------------------
 
-	Texture2D tex("Palette.jpg", 0);
-	obj_shader.use();
-	obj_shader.setInt("tex", 0);
-
 	camera.set_move_speed(5.0f);
 	camera.set_pos(-2.2, 1.5, 15, 0, -90, 45);
 	camera.set_default_pos(-2.2, 1.5, 15, 0, -90, 45);
 
+	Shader cube_shader("cube.vs", "cube.fs");
+	Shader obj_shader("gbuffer.vs", "gbuffer.fs");
+	Shader light_shader("light.vs", "light.fs");
+	Shader buffer_shader("buffer.vs", "buffer.fs");
+	Shader ssao_shader("ssao.vs", "ssao.fs");
+	Shader ssao_blur_shader("ssao_blur.vs", "ssao_blur.fs");
+	Shader ssao_buffer_shader("ssao_buffer_shader.vs", "ssao_buffer_shader.fs");
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glClearColor(0, 0, 0, 1.0f);
+
+	Texture2D tex("Palette.jpg", 0);
+	obj_shader.use();
+	obj_shader.setInt("tex", 0);
+
 	create_gBuffer();
+	create_ssao_kernel();
 	create_ssao_buffer();
+	ssao_shader.use();
+	ssao_shader.setInt("gPosition", 0);
+	ssao_shader.setInt("gNormal", 1);
+	ssao_shader.setInt("texNoise", 2);
+
+	/*
+	ssao_blur_shader.use();
+	ssao_blur_shader.setInt("ssaoInput", 0);
+
 	light_shader.use();
 	light_shader.setInt("gPosition", 0);
 	light_shader.setInt("gNormal", 1);
 	light_shader.setInt("gColor", 2);
+	light_shader.setInt("ssao", 3);
+	*/
 
-	buffer_shader.use();
-	buffer_shader.setInt("gBuffer", 0);
+	ssao_buffer_shader.use();
+	ssao_buffer_shader.setInt("ssaoInput", 0);
 
 	create_lights();
 	while (!glfwWindowShouldClose(window))
 	{
 		process_input(window);
-
-		glClearColor(0, 0, 0, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		glm::mat4 projection = camera.projection_matrix();
 		glm::mat4 view = camera.view_matrix();
@@ -323,7 +336,6 @@ int main()
 		obj_shader.setMat("projection", projection);
 		tex.activateAndBind();
 		city.draw();
-
 
 		if (mode == 1) {
 			// Generate SSAO texture
@@ -343,14 +355,30 @@ int main()
 			glBindVertexArray(quad_vao);
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
+			/*
 			// Blur SSAO texture to remove noise
 			glBindFramebuffer(GL_FRAMEBUFFER, ssaoBlurBuffer);
 			glClear(GL_COLOR_BUFFER_BIT);
 			ssao_blur_shader.use();
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, ssaoColor);
+			*/
 
+			// DEBUG
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+			ssao_buffer_shader.use();
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, ssaoColor);
+			glBindVertexArray(quad_vao);
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+			/*
+			// Light Pass
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			//glClearColor(0, 0, 0, 1.0f);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 			light_shader.use();
 			glActiveTexture(GL_TEXTURE0);
@@ -359,13 +387,18 @@ int main()
 			glBindTexture(GL_TEXTURE_2D, gNormal);
 			glActiveTexture(GL_TEXTURE2);
 			glBindTexture(GL_TEXTURE_2D, gColor);
+			glActiveTexture(GL_TEXTURE3);
+			glBindTexture(GL_TEXTURE_2D, ssaoColorBlur);
 
 			light_shader.setFloat("shininess", 16.0f);
-			draw_lights(light_shader);
 			light_shader.setMat("view", view);
+			send_lights_to_shader(light_shader);
 			glBindVertexArray(quad_vao);
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+			*/
 
+			// TODO
+			/*
 			if (show_lights) {
 				// copy depth buffer (may break... in particular with MSAA)
 				glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer);
@@ -380,6 +413,7 @@ int main()
 				glBindVertexArray(light_vao);
 				draw_light_cubes(cube_shader);
 			}
+			*/
 		}
 		else {
 			// Show gBuffer

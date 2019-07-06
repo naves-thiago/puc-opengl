@@ -187,8 +187,8 @@ void send_lights_to_shader(const Shader &s) {
 		Light &l = lights[i];
 		glm::vec3 light_pos = l.position;
 		glm::vec3 light_color = l.color;
-		glm::vec3 diffuse_color = light_color * glm::vec3(0.7f); // decrease influence
-		glm::vec3 ambient_color = light_color * glm::vec3(0.1f); // low influence
+		glm::vec3 diffuse_color = light_color * glm::vec3(0.5f); // decrease influence
+		glm::vec3 ambient_color = light_color * glm::vec3(0.5f); // low influence
 		
 		s.setVec("lights[" + std::to_string(i) + "].ambient", ambient_color);
 		s.setVec("lights[" + std::to_string(i) + "].diffuse", diffuse_color);
@@ -306,13 +306,11 @@ int main()
 	ssao_blur_shader.use();
 	ssao_blur_shader.setInt("ssaoInput", 0);
 
-	/*
 	light_shader.use();
 	light_shader.setInt("gPosition", 0);
 	light_shader.setInt("gNormal", 1);
 	light_shader.setInt("gColor", 2);
 	light_shader.setInt("ssao", 3);
-	*/
 
 	ssao_buffer_shader.use();
 	ssao_buffer_shader.setInt("ssaoInput", 0);
@@ -364,6 +362,7 @@ int main()
 			glBindVertexArray(quad_vao);
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
+			/*
 			// DEBUG
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -374,8 +373,8 @@ int main()
 			glBindTexture(GL_TEXTURE_2D, ssaoColorBlur);
 			glBindVertexArray(quad_vao);
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+			*/
 
-			/*
 			// Light Pass
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			//glClearColor(0, 0, 0, 1.0f);
@@ -396,7 +395,6 @@ int main()
 			send_lights_to_shader(light_shader);
 			glBindVertexArray(quad_vao);
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-			*/
 
 			// TODO
 			/*

@@ -105,38 +105,15 @@ unsigned int createGBuffer(void) {
 
 void create_lights(void) {
 	Light l;
-	srand(time(NULL));
-	#define randf() ((rand() % 255) / 255.0f)
-	for (unsigned int i=0; i<LIGHT_COUNT; i++) {
-		l.color = glm::normalize(glm::vec3(randf(), randf(), randf())) * ((rand() % 100) / 300.0f);
-		glm::vec3 axis(randf(), randf(), randf());
-		axis = glm::normalize(axis);
-		l.axis = axis;
-		glm::vec3 tmp = axis * (4 + 2 * (rand() % 100) / 100.0f); // Distance in [6, 10] from (0, 0)
-		l.position = glm::cross(tmp, glm::vec3(1.0f, 0.0f, 0.0f));
-		l.speed = glm::radians(20.0f + rand() % 50);
-		lights.push_back(l);
-	}
-}
-
-void update_lights(bool restart = false) {
-	static float last_time = glfwGetTime();
-	if (restart)
-		last_time = glfwGetTime();
-	float current_time = glfwGetTime();
-	float delta_time = current_time - last_time;
-	last_time = current_time;
-
-	for (int i = 0; i<LIGHT_COUNT; i++) {
-		Light &l = lights[i];
-		l.position = glm::vec3(
-				glm::rotate(glm::mat4(1.0f), delta_time * l.speed, l.axis) *
-				glm::vec4(l.position, 1.0));
-	}
+	l.color = glm::vec3(1.0f);
+	l.position = glm::vec3(1.2f, 1.0f, 5.0f);
+	//l.axis = glm::vec3();
+	//l.speed = 0;
+	lights.push_back(l);
 }
 
 void draw_lights(const Shader &s) {
-	for (int i = 0; i<LIGHT_COUNT; i++) {
+	for (int i = 0; i<lights.size(); i++) {
 		Light &l = lights[i];
 		glm::vec3 light_pos = l.position;
 		glm::vec3 light_color = l.color;
@@ -151,7 +128,7 @@ void draw_lights(const Shader &s) {
 }
 
 void draw_light_cubes(const Shader &cube_shader) {
-	for (int i = 0; i<LIGHT_COUNT; i++) {
+	for (int i = 0; i<lights.size(); i++) {
 		Light &l = lights[i];
 		cube_shader.setVec("lightColor", glm::normalize(l.color));
 		glm::mat4 light_model(1.0f);
@@ -258,9 +235,6 @@ int main()
 
 		glClearColor(0, 0, 0, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		update_lights(pause || pending_light_restart);
-		pending_light_restart = false;
 
 		glm::mat4 projection = camera.projection_matrix();
 		glm::mat4 view = camera.view_matrix();

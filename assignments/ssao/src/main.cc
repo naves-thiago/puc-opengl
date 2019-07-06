@@ -192,7 +192,7 @@ void send_lights_to_shader(const Shader &s) {
 		
 		s.setVec("lights[" + std::to_string(i) + "].ambient", ambient_color);
 		s.setVec("lights[" + std::to_string(i) + "].diffuse", diffuse_color);
-		s.setVec("lights[" + std::to_string(i) + "].specular", glm::vec3(0.5f));
+		s.setVec("lights[" + std::to_string(i) + "].specular", glm::vec3(0.2f));
 		s.setVec("lights[" + std::to_string(i) + "].position", light_pos);
 	}
 }
@@ -362,7 +362,7 @@ int main()
 			glBindVertexArray(quad_vao);
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-			/*
+#if 0
 			// DEBUG
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -373,8 +373,8 @@ int main()
 			glBindTexture(GL_TEXTURE_2D, ssaoColorBlur);
 			glBindVertexArray(quad_vao);
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-			*/
 
+#else
 			// Light Pass
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			//glClearColor(0, 0, 0, 1.0f);
@@ -390,12 +390,12 @@ int main()
 			glActiveTexture(GL_TEXTURE3);
 			glBindTexture(GL_TEXTURE_2D, ssaoColorBlur);
 
-			light_shader.setFloat("shininess", 16.0f);
+			light_shader.setFloat("shininess", 8.0f);
 			light_shader.setMat("view", view);
 			send_lights_to_shader(light_shader);
 			glBindVertexArray(quad_vao);
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
+#endif
 			// TODO
 			/*
 			if (show_lights) {

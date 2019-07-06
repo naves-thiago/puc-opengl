@@ -5,7 +5,8 @@ out float FragColor;
 
 const int kernelSize = 64;
 const float radius = 0.5;
-const float bias = 0.025;
+//const float bias = 0.025;
+const float bias = 0.015;
 
 uniform sampler2D gPosition; // Fragment Positions (eye space)
 uniform sampler2D gNormal;   // Fragment Normals (eye space)

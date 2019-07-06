@@ -303,10 +303,10 @@ int main()
 	ssao_shader.setInt("gNormal", 1);
 	ssao_shader.setInt("texNoise", 2);
 
-	/*
 	ssao_blur_shader.use();
 	ssao_blur_shader.setInt("ssaoInput", 0);
 
+	/*
 	light_shader.use();
 	light_shader.setInt("gPosition", 0);
 	light_shader.setInt("gNormal", 1);
@@ -355,14 +355,14 @@ int main()
 			glBindVertexArray(quad_vao);
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-			/*
 			// Blur SSAO texture to remove noise
 			glBindFramebuffer(GL_FRAMEBUFFER, ssaoBlurBuffer);
 			glClear(GL_COLOR_BUFFER_BIT);
 			ssao_blur_shader.use();
 			glActiveTexture(GL_TEXTURE0);
 			glBindTexture(GL_TEXTURE_2D, ssaoColor);
-			*/
+			glBindVertexArray(quad_vao);
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 			// DEBUG
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -370,7 +370,8 @@ int main()
 
 			ssao_buffer_shader.use();
 			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, ssaoColor);
+			//glBindTexture(GL_TEXTURE_2D, ssaoColor);
+			glBindTexture(GL_TEXTURE_2D, ssaoColorBlur);
 			glBindVertexArray(quad_vao);
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 

@@ -55,6 +55,7 @@ View_mode mode = MODE_NORMAL;
 std::vector<Light> lights;
 bool show_lights = false;
 bool pause = false;
+bool use_ssao = true;
 
 std::vector<glm::vec3> ssao_kernel;
 std::vector<glm::vec3> ssao_noise;
@@ -241,6 +242,7 @@ void setup_keyboard(Keyboard &k) {
 	});
 	k.on_key_down(GLFW_KEY_L, [](int i) { show_lights = !show_lights; });
 	k.on_key_down(GLFW_KEY_P, [](int i) { pause = !pause; });
+	k.on_key_down(GLFW_KEY_0, [](int i) { use_ssao = !use_ssao; });
 	k.on_key_down(GLFW_KEY_1, [](int i) { mode = MODE_NORMAL; });
 	k.on_key_down(GLFW_KEY_2, [](int i) { mode = MODE_POSITION_BUFF; });
 	k.on_key_down(GLFW_KEY_3, [](int i) { mode = MODE_NORMAL_BUFF; });
@@ -330,6 +332,7 @@ int main()
 	Shader ssao_shader("ssao.vs", "ssao.fs");
 	Shader ssao_blur_shader("ssao_blur.vs", "ssao_blur.fs");
 	Shader ssao_buffer_shader("ssao_buffer_shader.vs", "ssao_buffer_shader.fs");
+	Shader light_no_ssao_shader("light_no_ssao.vs", "light_no_ssao.fs");
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClearColor(0, 0, 0, 1.0f);
@@ -358,6 +361,11 @@ int main()
 	ssao_buffer_shader.use();
 	ssao_buffer_shader.setInt("ssaoInput", 0);
 
+	light_no_ssao_shader.use();
+	light_no_ssao_shader.setInt("gPosition", 0);
+	light_no_ssao_shader.setInt("gNormal", 1);
+	light_no_ssao_shader.setInt("gColor", 2);
+
 	create_lights();
 	while (!glfwWindowShouldClose(window))
 	{
@@ -380,24 +388,26 @@ int main()
 		city.draw();
 
 		if (mode == MODE_NORMAL || mode == MODE_SSAO_BUFF || mode == MODE_BLUR_BUFF) {
-			// Generate SSAO texture
-			glBindFramebuffer(GL_FRAMEBUFFER, ssaoBuffer);
-			glClear(GL_COLOR_BUFFER_BIT);
-			ssao_shader.use();
-			// Send kernel + rotation
-			for (unsigned int i=0; i<ssao_kernel.size(); i++)
-				ssao_shader.setVec("samples[" + std::to_string(i) + "]", ssao_kernel[i]);
-			ssao_shader.setMat("projection", projection);
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, gPosition);
-			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, gNormal);
-			glActiveTexture(GL_TEXTURE2);
-			glBindTexture(GL_TEXTURE_2D, noiseTexture);
-			glBindVertexArray(quad_vao);
-			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+			if (use_ssao || mode != MODE_NORMAL) {
+				// Generate SSAO texture
+				glBindFramebuffer(GL_FRAMEBUFFER, ssaoBuffer);
+				glClear(GL_COLOR_BUFFER_BIT);
+				ssao_shader.use();
+				// Send kernel + rotation
+				for (unsigned int i=0; i<ssao_kernel.size(); i++)
+					ssao_shader.setVec("samples[" + std::to_string(i) + "]", ssao_kernel[i]);
+				ssao_shader.setMat("projection", projection);
+				glActiveTexture(GL_TEXTURE0);
+				glBindTexture(GL_TEXTURE_2D, gPosition);
+				glActiveTexture(GL_TEXTURE1);
+				glBindTexture(GL_TEXTURE_2D, gNormal);
+				glActiveTexture(GL_TEXTURE2);
+				glBindTexture(GL_TEXTURE_2D, noiseTexture);
+				glBindVertexArray(quad_vao);
+				glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+			}
 
-			if (mode != MODE_SSAO_BUFF) {
+			if (mode == MODE_BLUR_BUFF || (mode == MODE_NORMAL && use_ssao)) {
 				// Blur SSAO texture to remove noise
 				glBindFramebuffer(GL_FRAMEBUFFER, ssaoBlurBuffer);
 				glClear(GL_COLOR_BUFFER_BIT);
@@ -428,19 +438,21 @@ int main()
 				//glClearColor(0, 0, 0, 1.0f);
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-				light_shader.use();
+				Shader &lshader = use_ssao ? light_shader : light_no_ssao_shader;
+				lshader.use();
 				glActiveTexture(GL_TEXTURE0);
 				glBindTexture(GL_TEXTURE_2D, gPosition);
 				glActiveTexture(GL_TEXTURE1);
 				glBindTexture(GL_TEXTURE_2D, gNormal);
 				glActiveTexture(GL_TEXTURE2);
 				glBindTexture(GL_TEXTURE_2D, gColor);
-				glActiveTexture(GL_TEXTURE3);
-				glBindTexture(GL_TEXTURE_2D, ssaoColorBlur);
-
-				light_shader.setFloat("shininess", 8.0f);
-				light_shader.setMat("view", view);
-				send_lights_to_shader(light_shader);
+				if (use_ssao) {
+					glActiveTexture(GL_TEXTURE3);
+					glBindTexture(GL_TEXTURE_2D, ssaoColorBlur);
+				}
+				lshader.setFloat("shininess", 8.0f);
+				lshader.setMat("view", view);
+				send_lights_to_shader(lshader);
 				glBindVertexArray(quad_vao);
 				glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 

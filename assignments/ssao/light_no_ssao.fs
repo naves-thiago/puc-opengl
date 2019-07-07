@@ -13,7 +13,6 @@ out vec4 FragColor;
 uniform sampler2D gPosition; // Fragment Positions (eye space)
 uniform sampler2D gNormal;   // Fragment Normals (eye space)
 uniform sampler2D gColor;    // Fragment colors
-uniform sampler2D ssao;      // SSAO ambient light attenuation
 
 const int LIGHT_COUNT = 1;
 
@@ -30,8 +29,7 @@ void main() {
 	vec3 result = vec3(0.0, 0.0, 0.0);
 
 	for (int i=0; i<LIGHT_COUNT; i++) {
-		float ambientOcclusion = texture(ssao, TexCoords).r;
-		vec3 ambient = lights[i].ambient * ambientOcclusion * color;
+		vec3 ambient = lights[i].ambient * color;
 
 		vec3 lightPos = vec3(view * vec4(lights[i].position, 1.0));
 		vec3 lightDir = normalize(lightPos - FragPos);

@@ -17,15 +17,17 @@
 #include <cstdlib>
 #include <random>
 #include "cube.h"
+#include <keyboard.hh>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-void process_input(GLFWwindow *window);
 void create_gBuffer(void);
 void create_lights(void);
 void send_lights_to_shader(const Shader &s);
 void draw_light_cubes(const Shader &cube_shader);
+void toggle_capture_cursor(int key);
+void setup_keyboard(Keyboard &k);
 
 const unsigned int SCR_WIDTH = 1280;
 const unsigned int SCR_HEIGHT = 720;
@@ -39,10 +41,11 @@ struct Light {
 	float speed;
 };
 
+GLFWwindow* window;
 bool mouse_captured = false;
 int mode = 1; // 1 - Normal Render, 2 - Position buffer, 3 - Normal buffer, 4 - Color buffer
 std::vector<Light> lights;
-bool show_lights = true;
+bool show_lights = false;
 bool pause = false;
 
 std::vector<glm::vec3> ssao_kernel;
@@ -209,6 +212,32 @@ void draw_light_cubes(const Shader &cube_shader) {
 	}
 }
 
+void toggle_capture_cursor(int key) {
+	mouse_captured = ! mouse_captured;
+	if (mouse_captured) {
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // Hide / capture cursor
+		camera.zero_mouse();
+		glfwSetCursorPosCallback(window, mouse_callback);
+	}
+	else {
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+		glfwSetCursorPosCallback(window, NULL);
+	}
+}
+
+void setup_keyboard(Keyboard &k) {
+	k.on_key_down(GLFW_KEY_ENTER, toggle_capture_cursor);
+	k.on_key_down(GLFW_KEY_ESCAPE, [](int i) {
+		glfwSetWindowShouldClose(window, true);
+	});
+	k.on_key_down(GLFW_KEY_L, [](int i) { show_lights = !show_lights; });
+	k.on_key_down(GLFW_KEY_P, [](int i) { pause = !pause; });
+	k.on_key_down(GLFW_KEY_1, [](int i) { mode = 1; });
+	k.on_key_down(GLFW_KEY_2, [](int i) { mode = 2; });
+	k.on_key_down(GLFW_KEY_3, [](int i) { mode = 3; });
+	k.on_key_down(GLFW_KEY_4, [](int i) { mode = 4; });
+}
+
 int main()
 {
 	glfwInit();
@@ -220,7 +249,7 @@ int main()
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 
-	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "SSAO", NULL, NULL);
+	window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "SSAO", NULL, NULL);
 	if (window == NULL)
 	{
 		std::cout << "Failed to create GLFW window" << std::endl;
@@ -236,6 +265,9 @@ int main()
 		std::cout << "Failed to initialize GLAD" << std::endl;
 		return -1;
 	}
+
+	Keyboard keyboard(window);
+	setup_keyboard(keyboard);
 
 	glEnable(GL_DEPTH_TEST);
 
@@ -318,7 +350,8 @@ int main()
 	create_lights();
 	while (!glfwWindowShouldClose(window))
 	{
-		process_input(window);
+		keyboard.process_input();
+		camera.key_press(window);
 
 		glm::mat4 projection = camera.projection_matrix();
 		glm::mat4 view = camera.view_matrix();
@@ -396,8 +429,6 @@ int main()
 			glBindVertexArray(quad_vao);
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 #endif
-			// TODO
-			/*
 			if (show_lights) {
 				// copy depth buffer (may break... in particular with MSAA)
 				glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer);
@@ -412,7 +443,6 @@ int main()
 				glBindVertexArray(light_vao);
 				draw_light_cubes(cube_shader);
 			}
-			*/
 		}
 		else {
 			// Show gBuffer
@@ -442,53 +472,6 @@ int main()
 	glDeleteBuffers(1, &light_vbo);
 	glfwTerminate();
 	return 0;
-}
-
-void process_input(GLFWwindow *window)
-{
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, true);
-
-	static int last_enter_state = GLFW_RELEASE;
-	if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS && last_enter_state == GLFW_RELEASE) {
-		mouse_captured = ! mouse_captured;
-		if (mouse_captured) {
-			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // Hide / capture cursor
-			camera.zero_mouse();
-			glfwSetCursorPosCallback(window, mouse_callback);
-		}
-		else {
-			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-			glfwSetCursorPosCallback(window, NULL);
-		}
-	}
-	last_enter_state = glfwGetKey(window, GLFW_KEY_ENTER);
-	
-	static int last_l_state = GLFW_RELEASE;
-	if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS && last_l_state == GLFW_RELEASE) {
-		show_lights = ! show_lights;
-	}
-	last_l_state = glfwGetKey(window, GLFW_KEY_L);
-
-	static int last_p_state = GLFW_RELEASE;
-	if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS && last_p_state == GLFW_RELEASE) {
-		pause = ! pause;
-	}
-	last_p_state = glfwGetKey(window, GLFW_KEY_P);
-
-	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
-		mode = 1;
-
-	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
-		mode = 2;
-
-	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
-		mode = 3;
-
-	if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS)
-		mode = 4;
-
-	camera.key_press(window);
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes

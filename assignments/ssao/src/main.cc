@@ -41,9 +41,17 @@ struct Light {
 	float speed;
 };
 
+typedef enum {
+	MODE_NORMAL,        // 1
+	MODE_POSITION_BUFF, // 2
+	MODE_NORMAL_BUFF,   // 3
+	MODE_COLOR_BUFF,    // 4
+	MODE_SSAO_BUFF,     // 5
+	MODE_BLUR_BUFF      // 6
+} View_mode;
+
 GLFWwindow* window;
-bool mouse_captured = false;
-int mode = 1; // 1 - Normal Render, 2 - Position buffer, 3 - Normal buffer, 4 - Color buffer
+View_mode mode = MODE_NORMAL;
 std::vector<Light> lights;
 bool show_lights = false;
 bool pause = false;
@@ -213,6 +221,7 @@ void draw_light_cubes(const Shader &cube_shader) {
 }
 
 void toggle_capture_cursor(int key) {
+	static bool mouse_captured = false;
 	mouse_captured = ! mouse_captured;
 	if (mouse_captured) {
 		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // Hide / capture cursor
@@ -232,10 +241,12 @@ void setup_keyboard(Keyboard &k) {
 	});
 	k.on_key_down(GLFW_KEY_L, [](int i) { show_lights = !show_lights; });
 	k.on_key_down(GLFW_KEY_P, [](int i) { pause = !pause; });
-	k.on_key_down(GLFW_KEY_1, [](int i) { mode = 1; });
-	k.on_key_down(GLFW_KEY_2, [](int i) { mode = 2; });
-	k.on_key_down(GLFW_KEY_3, [](int i) { mode = 3; });
-	k.on_key_down(GLFW_KEY_4, [](int i) { mode = 4; });
+	k.on_key_down(GLFW_KEY_1, [](int i) { mode = MODE_NORMAL; });
+	k.on_key_down(GLFW_KEY_2, [](int i) { mode = MODE_POSITION_BUFF; });
+	k.on_key_down(GLFW_KEY_3, [](int i) { mode = MODE_NORMAL_BUFF; });
+	k.on_key_down(GLFW_KEY_4, [](int i) { mode = MODE_COLOR_BUFF; });
+	k.on_key_down(GLFW_KEY_5, [](int i) { mode = MODE_SSAO_BUFF; });
+	k.on_key_down(GLFW_KEY_6, [](int i) { mode = MODE_BLUR_BUFF; });
 }
 
 int main()
@@ -368,7 +379,7 @@ int main()
 		tex.activateAndBind();
 		city.draw();
 
-		if (mode == 1) {
+		if (mode == MODE_NORMAL || mode == MODE_SSAO_BUFF || mode == MODE_BLUR_BUFF) {
 			// Generate SSAO texture
 			glBindFramebuffer(GL_FRAMEBUFFER, ssaoBuffer);
 			glClear(GL_COLOR_BUFFER_BIT);
@@ -386,62 +397,67 @@ int main()
 			glBindVertexArray(quad_vao);
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-			// Blur SSAO texture to remove noise
-			glBindFramebuffer(GL_FRAMEBUFFER, ssaoBlurBuffer);
-			glClear(GL_COLOR_BUFFER_BIT);
-			ssao_blur_shader.use();
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, ssaoColor);
-			glBindVertexArray(quad_vao);
-			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+			if (mode != MODE_SSAO_BUFF) {
+				// Blur SSAO texture to remove noise
+				glBindFramebuffer(GL_FRAMEBUFFER, ssaoBlurBuffer);
+				glClear(GL_COLOR_BUFFER_BIT);
+				ssao_blur_shader.use();
+				glActiveTexture(GL_TEXTURE0);
+				glBindTexture(GL_TEXTURE_2D, ssaoColor);
+				glBindVertexArray(quad_vao);
+				glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+			}
 
-#if 0
-			// DEBUG
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-			ssao_buffer_shader.use();
-			glActiveTexture(GL_TEXTURE0);
-			//glBindTexture(GL_TEXTURE_2D, ssaoColor);
-			glBindTexture(GL_TEXTURE_2D, ssaoColorBlur);
-			glBindVertexArray(quad_vao);
-			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-#else
-			// Light Pass
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			//glClearColor(0, 0, 0, 1.0f);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-			light_shader.use();
-			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, gPosition);
-			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, gNormal);
-			glActiveTexture(GL_TEXTURE2);
-			glBindTexture(GL_TEXTURE_2D, gColor);
-			glActiveTexture(GL_TEXTURE3);
-			glBindTexture(GL_TEXTURE_2D, ssaoColorBlur);
-
-			light_shader.setFloat("shininess", 8.0f);
-			light_shader.setMat("view", view);
-			send_lights_to_shader(light_shader);
-			glBindVertexArray(quad_vao);
-			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-#endif
-			if (show_lights) {
-				// copy depth buffer (may break... in particular with MSAA)
-				glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer);
-				glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0); // write to default framebuffer
-				glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT,
-						GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+			if (mode != MODE_NORMAL) {
+				// Render SSAO or SSAO_blur buffer
 				glBindFramebuffer(GL_FRAMEBUFFER, 0);
+				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-				cube_shader.use();
-				cube_shader.setMat("view", view);
-				cube_shader.setMat("projection", projection);
-				glBindVertexArray(light_vao);
-				draw_light_cubes(cube_shader);
+				ssao_buffer_shader.use();
+				glActiveTexture(GL_TEXTURE0);
+				if (mode == MODE_SSAO_BUFF)
+					glBindTexture(GL_TEXTURE_2D, ssaoColor);
+				else
+					glBindTexture(GL_TEXTURE_2D, ssaoColorBlur);
+				glBindVertexArray(quad_vao);
+				glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+			}
+			else {
+				// Light Pass
+				glBindFramebuffer(GL_FRAMEBUFFER, 0);
+				//glClearColor(0, 0, 0, 1.0f);
+				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+				light_shader.use();
+				glActiveTexture(GL_TEXTURE0);
+				glBindTexture(GL_TEXTURE_2D, gPosition);
+				glActiveTexture(GL_TEXTURE1);
+				glBindTexture(GL_TEXTURE_2D, gNormal);
+				glActiveTexture(GL_TEXTURE2);
+				glBindTexture(GL_TEXTURE_2D, gColor);
+				glActiveTexture(GL_TEXTURE3);
+				glBindTexture(GL_TEXTURE_2D, ssaoColorBlur);
+
+				light_shader.setFloat("shininess", 8.0f);
+				light_shader.setMat("view", view);
+				send_lights_to_shader(light_shader);
+				glBindVertexArray(quad_vao);
+				glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+				if (show_lights) {
+					// copy depth buffer (may break... in particular with MSAA)
+					glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer);
+					glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0); // write to default framebuffer
+					glBlitFramebuffer(0, 0, SCR_WIDTH, SCR_HEIGHT, 0, 0, SCR_WIDTH, SCR_HEIGHT,
+							GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+					glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+					cube_shader.use();
+					cube_shader.setMat("view", view);
+					cube_shader.setMat("projection", projection);
+					glBindVertexArray(light_vao);
+					draw_light_cubes(cube_shader);
+				}
 			}
 		}
 		else {
@@ -451,13 +467,13 @@ int main()
 
 			buffer_shader.use();
 			glActiveTexture(GL_TEXTURE0);
-			if (mode == 2)
+			if (mode == MODE_POSITION_BUFF)
 				glBindTexture(GL_TEXTURE_2D, gPosition);
 
-			if (mode == 3)
+			if (mode == MODE_NORMAL_BUFF)
 				glBindTexture(GL_TEXTURE_2D, gNormal);
 
-			if (mode == 4)
+			if (mode == MODE_COLOR_BUFF)
 				glBindTexture(GL_TEXTURE_2D, gColor);
 
 			glBindVertexArray(quad_vao);

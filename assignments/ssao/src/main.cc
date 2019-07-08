@@ -56,6 +56,7 @@ std::vector<Light> lights;
 bool show_lights = false;
 bool pause = false;
 bool use_ssao = true;
+bool blur_ssao = true;
 
 std::vector<glm::vec3> ssao_kernel;
 std::vector<glm::vec3> ssao_noise;
@@ -242,6 +243,7 @@ void setup_keyboard(Keyboard &k) {
 	});
 	k.on_key_down(GLFW_KEY_L, [](int i) { show_lights = !show_lights; });
 	k.on_key_down(GLFW_KEY_P, [](int i) { pause = !pause; });
+	k.on_key_down(GLFW_KEY_B, [](int i) { blur_ssao = !blur_ssao; });
 	k.on_key_down(GLFW_KEY_0, [](int i) { use_ssao = !use_ssao; });
 	k.on_key_down(GLFW_KEY_1, [](int i) { mode = MODE_NORMAL; });
 	k.on_key_down(GLFW_KEY_2, [](int i) { mode = MODE_POSITION_BUFF; });
@@ -407,7 +409,7 @@ int main()
 				glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 			}
 
-			if (mode == MODE_BLUR_BUFF || (mode == MODE_NORMAL && use_ssao)) {
+			if (mode == MODE_BLUR_BUFF || (mode == MODE_NORMAL && use_ssao && blur_ssao)) {
 				// Blur SSAO texture to remove noise
 				glBindFramebuffer(GL_FRAMEBUFFER, ssaoBlurBuffer);
 				glClear(GL_COLOR_BUFFER_BIT);
@@ -448,7 +450,10 @@ int main()
 				glBindTexture(GL_TEXTURE_2D, gColor);
 				if (use_ssao) {
 					glActiveTexture(GL_TEXTURE3);
-					glBindTexture(GL_TEXTURE_2D, ssaoColorBlur);
+					if (blur_ssao)
+						glBindTexture(GL_TEXTURE_2D, ssaoColorBlur);
+					else
+						glBindTexture(GL_TEXTURE_2D, ssaoColor);
 				}
 				lshader.setFloat("shininess", 8.0f);
 				lshader.setMat("view", view);

@@ -1,6 +1,6 @@
 CC=g++
-CFLAGS=-g -Wall -std=c++11 -I $(BASEDIR)/inc -I $(BASEDIR)/assimp/include
-LDFLAGS=-lglfw -lGL -lX11 -lpthread -lXi -ldl -L $(BASEDIR)/assimp/lib -lassimp
+CFLAGS=-g -Wall -std=c++11 -I $(BASEDIR)/inc
+LDFLAGS=-lglfw -lGL -lX11 -lpthread -lXi -ldl -lassimp
 
 LIB=glad.o shader.o texture.o stb_image.o mesh.o model.o
 _LIB=$(addprefix obj/, $(LIB))

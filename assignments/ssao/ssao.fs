@@ -14,9 +14,11 @@ uniform sampler2D texNoise;  // Noise texture
 
 uniform vec3 samples[kernelSize];
 uniform mat4 projection;
+uniform vec2 noiseScale;
 
 // tile noise over screen (this is the number of tiles on each direction)
-const vec2 noiseScale = vec2(1280.0 / 4.0, 720.0 / 4.0);
+//const vec2 noiseScale = vec2(1280.0 / 4.0, 720.0 / 4.0);
+//const vec2 noiseScale = vec2(800.0 / 4.0, 600.0 / 4.0);
 
 void main() {
 	vec3 fragPos   = texture(gPosition, TexCoords).rgb;
